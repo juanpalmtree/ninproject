@@ -5,8 +5,8 @@ const weaponDefinitions = [
   { key: "weapon3", label: "Nodachi", folder: "3忍太刀", frameCount: 24, cooldownMs: 1000, area: "nodachi", damage: 50 },
   { key: "weapon4", label: "Iga Hidden Blade", folder: "4伊賀密刀", frameCount: 13, cooldownMs: 500, area: "line2", damage: 50 },
   { key: "weapon6", label: "Shiranui Iron Fan", folder: "6鐵扇不知火", frameCount: 9, cooldownMs: 300, area: "fan", damage: 25 },
-  { key: "weapon19", label: "Muramasa", folder: "19Weapon19", frameCount: 13, cooldownMs: 500, area: "surround", damage: 50, soundKey: "muramasaSlash" },
-  { key: "weapon20", label: "Weapon 20", folder: "20Weapon20", frameCount: 10, cooldownMs: 500, area: "wide331", damage: 50, soundKey: "weapon20Slash" },
+  { key: "weapon19", label: "Muramasa", folder: "19Weapon19", frameCount: 13, cooldownMs: 500, area: "line2", damage: 80, soundKey: "muramasaSlash" },
+  { key: "weapon20", label: "Weapon 20", folder: "20Weapon20", frameCount: 9, cooldownMs: 300, area: "fan", damage: 60, soundKey: "weapon20Slash" },
 ];
 const weaponDefinitionByKey = Object.fromEntries(weaponDefinitions.map((weapon) => [weapon.key, weapon]));
 const weaponFrames = Object.fromEntries(weaponDefinitions.map((weapon) => [

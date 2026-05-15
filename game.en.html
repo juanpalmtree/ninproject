@@ -24,6 +24,7 @@
           </header>
 
           <aside class="team-tabs" aria-label="Teams">
+            <button id="teamEditBtn" type="button" class="team-edit-btn" aria-label="Edit ninjutsu">Edit</button>
             <div class="team-tab active">Blue Team</div>
             <div class="team-tab">Grey Team</div>
           </aside>
@@ -172,13 +173,60 @@
               <span>SFX</span>
             </label>
           </section>
+
+          <section id="ninjuEditor" class="room-ninju-editor" aria-label="Ninjutsu editor" hidden>
+            <div class="ninju-editor-profile">
+              <img class="ninju-editor-avatar" src="assets/room-ui-selected/b_team.png" alt="">
+              <div class="ninju-editor-stats">
+                <div><span>Name</span><strong>Player</strong><button type="button">Change</button></div>
+                <div><span>Level</span><strong>99</strong><span>Role</span><strong>Night Rogue</strong></div>
+                <div><span>Guild</span><strong>Nindou</strong></div>
+              </div>
+              <div class="ninju-editor-score">
+                <div><span>Wins</span><strong>15</strong><span>Losses</span><strong>19</strong></div>
+                <div><span>Gold</span><strong>0</strong></div>
+                <div><span>Rep</span><strong>0</strong></div>
+              </div>
+              <div class="ninju-editor-mark">忍</div>
+            </div>
+
+            <div class="ninju-editor-board">
+              <nav class="ninju-editor-tabs" aria-label="Edit categories">
+                <button class="active" type="button">Ninju</button>
+                <button type="button">Weapon</button>
+                <button type="button">Eyes</button>
+                <button type="button">Items</button>
+              </nav>
+              <div class="ninju-editor-series" aria-label="Ninjutsu series">
+                <span class="heal">Heal</span>
+                <span class="support">Support</span>
+                <span class="attack">Attack</span>
+                <span class="special">Special</span>
+                <span class="transform">Transform</span>
+              </div>
+              <div class="ninju-editor-panel">
+                <div class="ninju-editor-title">
+                  <span>Choose six ninjutsu to use in battle</span>
+                  <button type="button">Info</button>
+                </div>
+                <div class="ninju-editor-slot-row">
+                  <div id="ninjuEditorSlots" class="ninju-editor-slots" aria-label="Selected ninjutsu"></div>
+                  <button id="ninjuEditorReset" class="ninju-editor-reset" type="button">Reset</button>
+                </div>
+                <div id="ninjuEditorList" class="ninju-editor-list" aria-label="Available ninjutsu"></div>
+              </div>
+              <div class="ninju-editor-actions">
+                <button id="ninjuEditorCancel" type="button">Cancel</button>
+                <button id="ninjuEditorSave" type="button">Save</button>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
       <canvas id="game" width="960" height="680" aria-label="Nindou 2 offline grid battle"></canvas>
       <div class="hud">
         <div id="unitInfo" class="unit-info"></div>
         <div class="meter" aria-hidden="true"><i id="skillFill"></i></div>
-        <div class="meter ougi-meter" aria-hidden="true"><i id="ougiFill"></i></div>
         <button id="resetBtn" type="button" aria-label="Reset">Reset</button>
       </div>
       <p id="status" class="sr-only">Ready</p>

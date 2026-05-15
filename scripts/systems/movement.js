@@ -6,6 +6,10 @@ function skillMove(unit, cell) {
     setMessage(`${unit.name}: cannot move while holding money dart.`);
     return;
   }
+  if (!isFireToadActive(unit) && !weaponIsReady(unit)) {
+    setMessage(`${unit.name}: cannot move while weapon is recovering.`);
+    return;
+  }
   if (!canUnitMoveNow(unit)) {
     setMessage(`${unit.name}: cannot move right now.`);
     return;
@@ -32,7 +36,9 @@ function skillMove(unit, cell) {
   }
   const cost = Math.max(1, manhattan(unit, cell));
 
-  if (!isFireToadActive(unit)) unit.skill -= cost;
+  if (!isFireToadActive(unit)) {
+    unit.skill -= cost;
+  }
   moveUnit(unit, cell.x, cell.y);
   if (path.hitEnemies.length > 0) {
     for (const enemy of path.hitEnemies) {
@@ -41,6 +47,17 @@ function skillMove(unit, cell) {
   } else {
     setMessage(`${unit.name} spent ${cost} skill to move.`);
   }
+}
+
+function gainSoul(unit, steps) {
+  if (!unit || !canControlUnit(unit)) return;
+  const maxSteps = soulStepsPerLevel * soulMaxLevel;
+  const before = unit.soulSteps || 0;
+  const beforeLevel = Math.min(soulMaxLevel, Math.floor(before / soulStepsPerLevel));
+  unit.soulSteps = Math.min(maxSteps, before + Math.max(0, steps));
+  syncOugiFromSpecialGauge(unit);
+  const afterLevel = Math.min(soulMaxLevel, Math.floor(unit.soulSteps / soulStepsPerLevel));
+  if (afterLevel > beforeLevel) playSound(afterLevel >= soulMaxLevel ? "soulMax" : "soulLevelUp");
 }
 
 // 更新角色格子位置並啟動移動動畫。
@@ -82,7 +99,7 @@ function collideWithEnemy(mover, enemy) {
     setMessage(`${enemy.name} is invincible.`);
     return;
   }
-  const damage = defendedDamage(enemy, weaponDamage);
+  const damage = defendedDamage(enemy, collisionDamage);
   enemy.hp = Math.max(0, enemy.hp - damage);
   recordDamage(mover, enemy, damage);
   enemy.hitFlash = 0.65;

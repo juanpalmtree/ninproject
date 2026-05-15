@@ -34,7 +34,7 @@ function updateNinju(now) {
         unit.ninju = { type: unit.ninju.type, phase: "gap", nextType: "moneyDart", startedAt: now, duration: ninjuChainGap, queue: unit.ninju.queue || 0, gapMoves: 0 };
         if (unit.id === playerUnitId) setMessage(`${unit.name}: money dart chain gap.`);
       } else if (unit.ninju.queue > 0) {
-        unit.ninju = { type: unit.ninju.type, phase: "gap", nextType: queuedType, startedAt: now, duration: ninjuChainMaxGap, queue: unit.ninju.queue, gapMoves: 0 };
+        unit.ninju = { type: unit.ninju.type, phase: "gap", nextType: queuedType, nextAttackNinjuLevel: unit.ninju.pendingAttackNinjuLevel || 0, startedAt: now, duration: ninjuChainMaxGap, queue: unit.ninju.queue, gapMoves: 0 };
         if (unit.id === playerUnitId) setMessage(`${unit.name}: ninjutsu chain gap.`);
       } else {
         unit.ninju = null;
@@ -52,9 +52,9 @@ function updateNinju(now) {
         startMoneyDart(unit, now, true);
       } else {
         const type = unit.ninju.nextType || unit.ninju.type;
-        unit.ninju = { type, phase: "active", startedAt: now, duration: statusNinjuRule(type).castDurationMs, queue: Math.max(0, unit.ninju.queue - 1), chainMoves: firstMoveSucceeded ? ninjuFollowupMoveAllowance : 0 };
+        unit.ninju = { type, phase: "active", startedAt: now, duration: statusNinjuRule(type).castDurationMs, queue: Math.max(0, unit.ninju.queue - 1), chainMoves: firstMoveSucceeded ? ninjuFollowupMoveAllowance : 0, attackNinjuLevel: unit.ninju.nextAttackNinjuLevel || 0 };
         if (canControlUnit(unit)) playSound("useNinju");
-        playStatusEnergyUpSequence();
+        playStatusNinjuSound(type);
         if (unit.id === playerUnitId) setMessage(`${unit.name}: ninjutsu cast continued.`);
       }
     }
@@ -84,9 +84,34 @@ function useHotBloodNinju() {
   useStatusNinju("hotBlood", "Hot blood");
 }
 
+function useFlashNinju() {
+  useAttackNinju("flash");
+}
+
+function useAttackNinju(type) {
+  const config = attackNinjuConfigs[type];
+  useStatusNinju(type, config?.label || type);
+}
+
+function useGenkiNinju() {
+  useStatusNinju("genki", "Genki");
+}
+
+function useKakkiNinju() {
+  useStatusNinju("kakki", "Kakki");
+}
+
+function useShinkiNinju() {
+  useStatusNinju("shinki", "Shinki");
+}
+
 function useFireToadNinju() {
   const unit = selectedUnit();
   if (!unit || !canControlUnit(unit)) return;
+  if (isUnitDisabled(unit)) {
+    setMessage(`${unit.name}: cannot act now.`);
+    return;
+  }
   if (unit.moneyDart) {
     setMessage(`${unit.name}: cannot use Fire Toad while holding money dart.`);
     return;
@@ -162,25 +187,38 @@ function useStatusNinju(type, label) {
     return;
   }
   const rule = statusNinjuRule(type);
+  if (rule.available === false) return;
+  if (isUnitDisabled(unit)) {
+    setMessage(`${unit.name}: cannot act now.`);
+    return;
+  }
   if ((unit.ninjuLockedUntil || 0) > performance.now()) {
     setMessage(`${unit.name}: cannot use ninjutsu yet.`);
     return;
   }
-  if (unit.skill < rule.cost) {
+  const isAttackNinju = isAttackNinjuType(type);
+  if (!isAttackNinju && unit.skill < rule.cost) {
     setMessage(`${label} needs ${rule.cost} skill.`);
     return;
   }
 
-  unit.skill -= rule.cost;
+  const attackNinjuLevel = isAttackNinju ? consumeAttackNinjuSoulLevel(unit) : 0;
+  if (isAttackNinju && attackNinjuLevel < 1) {
+    setMessage(`${label} needs Soul 1.`);
+    return;
+  }
+
+  if (!isAttackNinju) unit.skill -= rule.cost;
   const now = performance.now();
 
   if (unit.ninju && isStatusNinjuType(unit.ninju.type)) {
     unit.ninju.pendingType = type;
+    if (isAttackNinju) unit.ninju.pendingAttackNinjuLevel = attackNinjuLevel;
     unit.ninju.queue = (unit.ninju.queue || 0) + 1;
     setMessage(`${unit.name} queued ${label}.`);
   } else {
-    unit.ninju = { type, phase: "active", startedAt: now, duration: rule.castDurationMs, queue: 0 };
-    playStatusEnergyUpSequence();
+    unit.ninju = { type, phase: "active", startedAt: now, duration: rule.castDurationMs, queue: 0, attackNinjuLevel };
+    playStatusNinjuSound(type);
     setMessage(`${unit.name} used ${label}.`);
   }
   playSound("useNinju");
@@ -190,6 +228,10 @@ function useStatusNinju(type, label) {
 function useMoneyDart() {
   const unit = selectedUnit();
   if (!unit || !canControlUnit(unit)) return;
+  if (isUnitDisabled(unit)) {
+    setMessage(`${unit.name}: cannot act now.`);
+    return;
+  }
   if (isFireToadActive(unit) || isFireToadTransforming(unit)) {
     setMessage(`${unit.name}: cannot use items as Fire Toad.`);
     return;
@@ -231,6 +273,7 @@ function useMoneyDart() {
 }
 
 function startMoneyDart(unit, now = performance.now(), playActivationSound = true) {
+  if (isUnitDisabled(unit)) return;
   if (unit.moneyDart) return;
   unit.moneyDart = { startedAt: now, invincibleUntil: now + moneyDartReadyMs };
   if (playActivationSound) playSound("takeDart");
@@ -241,6 +284,10 @@ function startMoneyDart(unit, now = performance.now(), playActivationSound = tru
 function throwMoneyDart(unit, targetCell) {
   if (!unit.moneyDart) return;
   const now = performance.now();
+  if (isUnitDisabled(unit)) {
+    setMessage(`${unit.name}: cannot act now.`);
+    return;
+  }
   if (now < unit.moneyDart.invincibleUntil) {
     setMessage(`${unit.name}: money dart is ready after the invincible moment.`);
     return;
@@ -315,18 +362,27 @@ function isUnitCastingNinju(unit) {
 }
 
 function canUnitMoveNow(unit) {
+  if (isUnitDisabled(unit)) return false;
   if (isUnitControlLocked(unit)) return false;
   if (!isUnitCastingNinju(unit)) return true;
   return Boolean(unit.ninju && unit.ninju.chainMoves > 0);
 }
 
 function isUnitInvincible(unit) {
-  return isFireToadTransforming(unit) || isUnitCastingNinju(unit) || isUnitInNinjuGap(unit) || isMoneyDartInvincible(unit) || isOugiInvincible(unit);
+  return isFireToadTransforming(unit) || isUnitCastingNinju(unit) || isUnitInNinjuGap(unit) || isMoneyDartInvincible(unit) || isOugiInvincible(unit) || isFlashInvincible(unit);
 }
 
 function isUnitControlLocked(unit) {
   const now = performance.now();
   return Boolean(unit && ((unit.fireToadTransformUntil || 0) > now || (unit.ougiCastUntil || 0) > now || (unit.ougiCcUntil || 0) > now || (unit.resultAnimUntil || 0) > now));
+}
+
+function isUnitDisabled(unit) {
+  return Boolean(unit && (unit.disabledUntil || 0) > performance.now());
+}
+
+function isFlashInvincible(unit) {
+  return Boolean(unit && (unit.invincibleUntil || 0) > performance.now());
 }
 
 function isOugiInvincible(unit) {
@@ -363,6 +419,24 @@ function isHotBloodActive(unit) {
 }
 
 function refreshStatusNinju(unit, type, now = performance.now()) {
+  if (isAttackNinjuType(type)) {
+    triggerAttackNinju(unit, type, unit.ninju?.attackNinjuLevel || 0, now);
+    return;
+  }
+  if (isHealNinjuType(type)) {
+    const rule = healNinjuRule(type);
+    if (rule.effect === "steelNoDefense") return;
+    if (rule.effect === "teamHeal") {
+      for (const teammate of state.units) {
+        if (teammate.team === unit.team && teammate.alive) {
+          teammate.hp = Math.min(teammate.maxHp, teammate.hp + rule.healAmount);
+        }
+      }
+      return;
+    }
+    unit.hp = Math.min(unit.maxHp, unit.hp + rule.healAmount);
+    return;
+  }
   if (type === "steel") {
     unit.steelUntil = now + steelRule().durationMs;
     unit.buffAuraType = "steel";
@@ -374,11 +448,21 @@ function refreshStatusNinju(unit, type, now = performance.now()) {
 }
 
 function statusNinjuRule(type) {
+  if (isAttackNinjuType(type)) return attackNinjuRule(type);
+  if (isHealNinjuType(type)) return healNinjuRule(type);
   return type === "hotBlood" ? hotBloodRule() : steelRule();
 }
 
 function isStatusNinjuType(type) {
-  return type === "steel" || type === "hotBlood";
+  return type === "steel" || type === "hotBlood" || isAttackNinjuType(type) || isHealNinjuType(type);
+}
+
+function isAttackNinjuType(type) {
+  return Boolean(attackNinjuConfigs[type]);
+}
+
+function isHealNinjuType(type) {
+  return type === "genki" || type === "kakki" || type === "shinki";
 }
 
 function isCastNinjuType(type) {
@@ -397,4 +481,79 @@ function playStatusEnergyUpSequence() {
     playSound("statusEnergyUp2");
   };
   first.addEventListener("ended", onFirstEnded);
+}
+
+function playStatusNinjuSound(type) {
+  if (isAttackNinjuType(type)) {
+    const sound = attackNinjuConfigs[type]?.castSound;
+    if (sound) playSound(sound);
+    return;
+  }
+  if (type === "genki") {
+    playSound("regenHpSmall");
+    return;
+  }
+  if (type === "kakki" || type === "shinki") {
+    playSound("regenHpLarge");
+    return;
+  }
+  playStatusEnergyUpSequence();
+}
+
+function triggerAttackNinju(caster, type, attackNinjuLevel, now = performance.now()) {
+  const config = attackNinjuConfigs[type];
+  const rule = attackNinjuRule(type);
+  const targets = attackNinjuTargets(caster, attackNinjuLevel);
+  if (targets.length > 0 && config?.hitSound) playSound(config.hitSound);
+  for (const target of targets) {
+    const outcome = attackNinjuOutcome(type, rule);
+    const hit = Boolean(outcome);
+    const disableMs = hit ? (outcome.hitDisableMs || rule.hitDisableMs) : rule.missDisableMs;
+    target.disabledUntil = now + disableMs;
+    target.invincibleUntil = target.disabledUntil;
+    target.moneyDart = null;
+    target.hitFlash = hit ? 0.65 : 0.25;
+    cancelDragIfPressed(target);
+    if (typeof addNinjuDamageEffect === "function") {
+      addNinjuDamageEffect(type, target, now, hit && config?.holdHitLastFrame ? disableMs : (hit ? 1500 : 0), config?.holdHitLastFrame ? { frameDuration: 1500 } : {});
+      if (hit) {
+        if (config?.hitBodyEffect !== null) addNinjuDamageEffect(config?.hitBodyEffect || "flashHit", target, now + 1500, 2000);
+        addNinjuDamageEffect(outcome.headEffect || "flashHitHead", target, now + 1500, 2000);
+        if (config?.breakEffect) addNinjuDamageEffect(config.breakEffect, target, now + disableMs, 350);
+      } else {
+        addNinjuDamageEffect("flashMiss", target, now + 1500, 1000);
+      }
+    }
+    if (hit) damageUnit(target, outcome.damage, `${caster.name} hit ${target.name} with ${config?.label || type}`, true, caster);
+  }
+}
+
+function attackNinjuOutcome(type, rule) {
+  const outcomes = attackNinjuConfigs[type]?.outcomes;
+  if (!outcomes) {
+    return Math.random() < rule.hitChance ? { damage: rule.damage, headEffect: "flashHitHead" } : null;
+  }
+  let roll = Math.random();
+  for (const outcome of outcomes) {
+    if (roll < outcome.chance) return outcome;
+    roll -= outcome.chance;
+  }
+  return null;
+}
+
+function attackNinjuTargets(caster, attackNinjuLevel) {
+  const count = Math.max(0, Math.min(soulMaxLevel, attackNinjuLevel));
+  return state.units
+    .filter((target) => target.alive && target.team !== caster.team && !isUnitInvincible(target))
+    .sort((a, b) => manhattan(caster, a) - manhattan(caster, b) || a.id - b.id)
+    .slice(0, count);
+}
+
+function consumeAttackNinjuSoulLevel(unit) {
+  const level = Math.min(soulMaxLevel, Math.floor((unit.soulSteps || 0) / soulStepsPerLevel));
+  if (level > 0) {
+    unit.soulSteps = 0;
+    unit.ougi = 0;
+  }
+  return level;
 }

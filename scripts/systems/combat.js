@@ -1,6 +1,10 @@
 // ===== Combat =====
 // 處理武器直接攻擊敵方角色。
 function attack(attacker, target) {
+  if (isUnitDisabled(attacker)) {
+    setMessage(`${attacker.name}: cannot act now.`);
+    return;
+  }
   if (isFireToadActive(attacker) || isFireToadTransforming(attacker)) {
     setMessage(`${attacker.name}: Fire Toad cannot use weapons.`);
     return;
@@ -70,6 +74,10 @@ function damageObject(object, attacker) {
 
 // 攻擊指定格子，可能打到敵人或物件。
 function attackCell(attacker, cell) {
+  if (isUnitDisabled(attacker)) {
+    setMessage(`${attacker.name}: cannot act now.`);
+    return;
+  }
   if (isFireToadActive(attacker) || isFireToadTransforming(attacker)) {
     setMessage(`${attacker.name}: Fire Toad cannot use weapons.`);
     return;
@@ -117,6 +125,10 @@ function attackCell(attacker, cell) {
 
 // 點遠處時推算方向，再攻擊角色旁邊一格。
 function attackAimedWeapon(attacker, targetCell) {
+  if (isUnitDisabled(attacker)) {
+    setMessage(`${attacker.name}: cannot act now.`);
+    return;
+  }
   if (isFireToadActive(attacker) || isFireToadTransforming(attacker)) {
     setMessage(`${attacker.name}: Fire Toad cannot use weapons.`);
     return;

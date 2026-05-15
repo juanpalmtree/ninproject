@@ -4,16 +4,22 @@ const ctx = canvas.getContext("2d");
 const statusEl = document.querySelector("#status");
 const unitInfoEl = document.querySelector("#unitInfo");
 const skillFillEl = document.querySelector("#skillFill");
-const ougiFillEl = document.querySelector("#ougiFill");
 const resetBtn = document.querySelector("#resetBtn");
 const battleStartBtn = document.querySelector("#battleStartBtn");
 const musicVolumeInput = document.querySelector("#musicVolume");
 const sfxVolumeInput = document.querySelector("#sfxVolume");
 const ruleModeToggle = document.querySelector("#ruleModeToggle");
 const ruleModeCheckbox = document.querySelector("#ruleModeCheckbox");
+const teamEditBtn = document.querySelector("#teamEditBtn");
 const roomInventoryBtn = document.querySelector("#roomInventoryBtn");
 const roomInventoryPanel = document.querySelector("#roomInventoryPanel");
 const roomInventoryList = document.querySelector("#roomInventoryList");
+const ninjuEditorEl = document.querySelector("#ninjuEditor");
+const ninjuEditorSlotsEl = document.querySelector("#ninjuEditorSlots");
+const ninjuEditorListEl = document.querySelector("#ninjuEditorList");
+const ninjuEditorResetBtn = document.querySelector("#ninjuEditorReset");
+const ninjuEditorCancelBtn = document.querySelector("#ninjuEditorCancel");
+const ninjuEditorSaveBtn = document.querySelector("#ninjuEditorSave");
 const roomCardEls = Array.from(document.querySelectorAll(".room-player-card"));
 const weaponSelectEls = Array.from(document.querySelectorAll(".room-weapon-select"));
 const controlSelectEls = Array.from(document.querySelectorAll(".room-control-select"));
@@ -43,6 +49,7 @@ const state = {
   lastFrame: performance.now(),
   projectiles: [],
   moneyDartCasts: [],
+  ninjuDamageEffects: [],
   ougiCasts: [],
   deathAnimations: [],
   pendingResult: null,
@@ -68,6 +75,29 @@ const itemSlotY = 558;
 const itemSlotW = 38;
 const itemSlotH = 34;
 const itemSlotGap = 6;
+const ninjuCatalog = [
+  { type: "moneyDart", label: "Dart", group: "projectile", editorRow: "special", editorOrder: 1 },
+  { type: "steel", label: "Steel", group: "buff", editorRow: "support", editorOrder: 1 },
+  { type: "hotBlood", label: "Rage", group: "buff", editorRow: "support", editorOrder: 2 },
+  { type: "genki", label: "Genki", group: "heal", editorRow: "heal", editorOrder: 1 },
+  { type: "kakki", label: "Kakki", group: "heal", editorRow: "heal", editorOrder: 2 },
+  { type: "shinki", label: "Shinki", group: "heal", editorRow: "heal", editorOrder: 3 },
+  { type: "flash", label: "Flash", group: "attack", editorRow: "attack", editorOrder: 1 },
+  { type: "wildfire", label: "Wild", group: "attack", editorRow: "attack", editorOrder: 2 },
+  { type: "freeze", label: "Freeze", group: "attack", editorRow: "attack", editorOrder: 3 },
+  { type: "fireToad", label: "Toad", group: "transform", editorRow: "transform", editorOrder: 1 },
+];
+const ninjuByType = Object.fromEntries(ninjuCatalog.map((ninju) => [ninju.type, ninju]));
+const ninjuEditorRowOrder = { heal: 1, support: 2, attack: 3, special: 4, transform: 5 };
+const ninjuEditorCatalog = [...ninjuCatalog].sort((a, b) => (
+  (ninjuEditorRowOrder[a.editorRow] || 99) - (ninjuEditorRowOrder[b.editorRow] || 99)
+  || a.editorOrder - b.editorOrder
+));
+const defaultNinjuLoadout = ["moneyDart", "steel", "hotBlood", "fireToad", "genki", "flash"];
+const ninjuLoadoutStorageKey = "nindou2.en.ninjuLoadout";
+let selectedNinjuLoadout = loadSavedNinjuLoadout();
+let editNinjuDraft = [...selectedNinjuLoadout];
+let editNinjuSlotIndex = 0;
 
 // ===== Asset Loading =====
 // 載入所有遊戲圖片與動畫影格。
@@ -91,10 +121,26 @@ function loadImages() {
     img.src = src;
   }));
   const atkUpImages = atkUpFrameSources.map((src, index) => loadFrame(src, atkUpFrames, index));
+  const regenHpSmallImages = regenHpSmallFrameSources.map((src, index) => loadFrame(src, regenHpSmallFrames, index));
+  const regenHpLargeImages = regenHpLargeFrameSources.map((src, index) => loadFrame(src, regenHpLargeFrames, index));
+  const smallThunderSummonImages = smallThunderSummonFrameSources.map((src, index) => loadFrame(src, smallThunderSummonFrames, index));
+  const smallThunderDamagedImages = smallThunderDamagedFrameSources.map((src, index) => loadFrame(src, smallThunderDamagedFrames, index));
+  const smallFireSummonImages = smallFireSummonFrameSources.map((src, index) => loadFrame(src, smallFireSummonFrames, index));
+  const smallFireDamagedImages = smallFireDamagedFrameSources.map((src, index) => loadFrame(src, smallFireDamagedFrames, index));
+  const smallIceSummonImages = smallIceSummonFrameSources.map((src, index) => loadFrame(src, smallIceSummonFrames, index));
+  const smallIceDamagedImages = smallIceDamagedFrameSources.map((src, index) => loadFrame(src, smallIceDamagedFrames, index));
+  const smallIceBreakImages = smallIceBreakFrameSources.map((src, index) => loadFrame(src, smallIceBreakFrames, index));
+  const damageFailImages = damageFailFrameSources.map((src, index) => loadFrame(src, damageFailFrames, index));
+  const faintedImages = faintedFrameSources.map((src, index) => loadFrame(src, faintedFrames, index));
+  const damageSuccessSmallImages = damageSuccessSmallFrameSources.map((src, index) => loadFrame(src, damageSuccessSmallFrames, index));
+  const damageSuccessMiddleImages = damageSuccessMiddleFrameSources.map((src, index) => loadFrame(src, damageSuccessMiddleFrames, index));
   const readyImages = moneyDartReadyFrameSources.map((src, index) => loadFrame(src, moneyDartReadyFrames, index));
   const respawnPointerImages = respawnPointerFrameSources.map((src, index) => loadFrame(src, respawnPointerFrames, index));
   const dragArrowImages = Object.entries(dragArrowFrameSources).flatMap(([direction, sources]) => (
     sources.map((src, index) => loadFrame(src, dragArrowFrames[direction], index))
+  ));
+  const useNinjuImages = Object.entries(useNinjuFrameSources).flatMap(([team, sources]) => (
+    sources.map((src, index) => loadFrame(src, useNinjuFrames[team], index))
   ));
   const shootImages = Object.entries(moneyDartShootFrameSources).flatMap(([direction, sources]) => (
     sources.map((src, index) => loadFrame(src, moneyDartShootFrames[direction], index))
@@ -136,7 +182,7 @@ function loadImages() {
   ));
   const chargeRedImages = chargeRedFrameSources.map((src, index) => loadFrame(src, chargeRedFrames, index));
   const chargeYellowImages = chargeYellowFrameSources.map((src, index) => loadFrame(src, chargeYellowFrames, index));
-  return Promise.all([...staticImages, ...ninjuImages, ...atkUpImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages]);
+  return Promise.all([...staticImages, ...ninjuImages, ...atkUpImages, ...regenHpSmallImages, ...regenHpLargeImages, ...smallThunderSummonImages, ...smallThunderDamagedImages, ...smallFireSummonImages, ...smallFireDamagedImages, ...smallIceSummonImages, ...smallIceDamagedImages, ...smallIceBreakImages, ...damageFailImages, ...faintedImages, ...damageSuccessSmallImages, ...damageSuccessMiddleImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...useNinjuImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages]);
 }
 
 // 載入單張動畫影格，成功後放到指定陣列位置。
@@ -162,6 +208,7 @@ function resetGame() {
   state.attacks = [];
   state.projectiles = [];
   state.moneyDartCasts = [];
+  state.ninjuDamageEffects = [];
   state.ougiCasts = [];
   state.deathAnimations = [];
   state.pendingResult = null;
@@ -189,7 +236,7 @@ function resetGame() {
 function makeUnit(id, name, team, x, y, weaponKey = defaultWeaponKey, controlMode = "ai_beginner", hpMax = maxHp, roomSlotKey = "") {
   const aiNextThink = controlMode === "player" ? 0 : performance.now() + 520 + Math.random() * 500;
   const storage = roomSlotKey ? storageForRoomSlotKey(roomSlotKey) : { gold: 0, items: {}, itemSlots: [] };
-  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
+  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, soulSteps: 0, gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", disabledUntil: 0, invincibleUntil: 0, moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
 }
 
 function roomStorageKey(team, slot) {
@@ -617,7 +664,8 @@ function drawUnits() {
       ctx.restore();
     }
 
-    const sprite = unitSprite(unit);
+    const useNinjuSprite = unitUseNinjuSprite(unit);
+    const sprite = useNinjuSprite || unitSprite(unit);
     const ougiCast = activeOugiCast(unit);
     if (resultActor) {
       drawMatchEndUnitFrame(resultActor, p, performance.now());
@@ -632,7 +680,7 @@ function drawUnits() {
       if (auraType === "steel") drawSteelSpriteOutline(sprite, p, bob);
       if (auraType === "hotBlood") drawHotBloodSpriteOutline(sprite, p, bob);
       ctx.drawImage(sprite, p.x - 31, p.y - 47 + bob, 62, 62);
-      drawUnitEyes(unit, p, bob);
+      drawUnitEyes(useNinjuSprite ? { ...unit, facing: "down" } : unit, p, bob);
     } else if (!ougiCast && !activeMoneyDartCast(unit)) {
       ctx.fillStyle = unit.team === "blue" ? "#5bb8ff" : "#b5b9b3";
       ctx.beginPath();
@@ -1451,7 +1499,7 @@ function drawNinjuEffects(now) {
     const p = unitPosition(unit);
     if (isUnitCastingNinju(unit)) {
       const progress = Math.min(0.999, (now - unit.ninju.startedAt) / unit.ninju.duration);
-      const frames = unit.ninju.type === "hotBlood" ? atkUpFrames : defUpFrames;
+      const frames = statusNinjuCastFrames(unit.ninju.type);
       const frame = frames[Math.floor(progress * frames.length)];
       if (frame) {
         ctx.save();
@@ -1461,6 +1509,80 @@ function drawNinjuEffects(now) {
       }
     }
   }
+  drawNinjuDamageEffects(now);
+}
+
+function statusNinjuCastFrames(type) {
+  if (type === "hotBlood") return atkUpFrames;
+  if (type === "genki") return regenHpSmallFrames;
+  if (type === "kakki" || type === "shinki") return regenHpLargeFrames;
+  if (attackNinjuConfigs[type]) return attackNinjuConfigs[type].summonFrames || defUpFrames;
+  return defUpFrames;
+}
+
+function ninjuDamageFrames(type) {
+  if (type === "flash") return smallThunderDamagedFrames;
+  if (type === "wildfire") return smallFireDamagedFrames;
+  if (type === "freeze") return smallIceDamagedFrames;
+  if (type === "freezeBreak") return smallIceBreakFrames;
+  if (type === "flashMiss") return damageFailFrames;
+  if (type === "flashHit") return faintedFrames;
+  if (type === "flashHitHead") return damageSuccessSmallFrames;
+  if (type === "wildfireMiddleHitHead") return damageSuccessMiddleFrames;
+  return [];
+}
+
+function ninjuDamageFrameBox(type) {
+  if (type === "flashMiss") return { x: 0, y: 76, w: 87, h: 57 };
+  if (type === "flashHitHead") return { x: 0, y: 78, w: 87, h: 57 };
+  if (type === "wildfireMiddleHitHead") return { x: 0, y: 78, w: 87, h: 57 };
+  if (type === "flashHit") return { x: 0, y: 35, w: 74, h: 74 };
+  return { x: 0, y: 22, w: 138, h: 138 };
+}
+
+function drawNinjuDamageEffects(now) {
+  if (!state.ninjuDamageEffects) state.ninjuDamageEffects = [];
+  for (let i = state.ninjuDamageEffects.length - 1; i >= 0; i--) {
+    const effect = state.ninjuDamageEffects[i];
+    const elapsed = now - effect.startedAt;
+    if (elapsed < 0) continue;
+    if (elapsed >= effect.duration) {
+      state.ninjuDamageEffects.splice(i, 1);
+      continue;
+    }
+    const target = state.units.find((unit) => unit.id === effect.unitId);
+    if (!target && !effect.at) {
+      state.ninjuDamageEffects.splice(i, 1);
+      continue;
+    }
+    const frames = ninjuDamageFrames(effect.type);
+    if (!frames.length) continue;
+    const frameDuration = effect.options?.frameDuration || effect.duration;
+    const progress = Math.min(0.999, elapsed / frameDuration);
+    const frameIndex = Math.min(frames.length - 1, Math.floor(progress * frames.length));
+    const frame = frames[frameIndex];
+    if (!frame) continue;
+    const p = target && (target.alive || target.respawning) ? unitPosition(target) : effect.at;
+    const box = ninjuDamageFrameBox(effect.type);
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(frame, p.x + box.x - box.w / 2, p.y - box.y - box.h / 2, box.w, box.h);
+    ctx.restore();
+  }
+}
+
+function addNinjuDamageEffect(type, target, startedAt, duration, options = {}) {
+  if (!target) return;
+  if (!state.ninjuDamageEffects) state.ninjuDamageEffects = [];
+  const frames = ninjuDamageFrames(type);
+  state.ninjuDamageEffects.push({
+    type,
+    unitId: target.id,
+    at: unitPosition(target),
+    startedAt,
+    duration: duration || Math.max(300, frames.length * 40),
+    options,
+  });
 }
 
 // ===== Rendering: Overlays / Result =====
@@ -1549,9 +1671,56 @@ function drawResultRow(values, y, header = false, team = "") {
 // ===== Rendering: HUD =====
 // 繪製遊戲中的上方與下方 HUD。
 function drawGameHud() {
+  drawSoulHud();
   drawTopHud();
   drawBottomPlayerHud();
   drawInventoryHud();
+}
+
+function drawSoulHud() {
+  const x = 16;
+  const y = 470;
+  const w = 284;
+  const h = 66;
+  const barY = y + 44;
+  const barH = 7;
+  const tickXs = [61, 101, 154, 214, 275];
+  const unit = selectedHudUnit();
+  const soulSteps = Math.min(soulStepsPerLevel * soulMaxLevel, Math.max(0, unit?.soulSteps || 0));
+  const completedLevel = Math.min(soulMaxLevel, Math.floor(soulSteps / soulStepsPerLevel));
+  const segmentProgress = completedLevel >= soulMaxLevel ? 1 : (soulSteps % soulStepsPerLevel) / soulStepsPerLevel;
+  const imageKey = `soulHud${Math.min(5, completedLevel <= 0 ? 1 : completedLevel + 1)}`;
+  const fillColors = ["#1b7a2d", "#1b7a2d", "#20248b", "#8c178e", "#c92116"];
+
+  ctx.save();
+  if (images[imageKey]) ctx.drawImage(images[imageKey], x, y, w, h);
+  if (soulSteps > 0) {
+    const fromTick = tickXs[completedLevel];
+    const toTick = tickXs[Math.min(soulMaxLevel, completedLevel + 1)];
+    const fillEndOffset = completedLevel >= soulMaxLevel ? tickXs[soulMaxLevel] : fromTick + (toTick - fromTick) * segmentProgress;
+    const barX = x + tickXs[0];
+    const fillEndX = x + fillEndOffset;
+    ctx.fillStyle = fillColors[completedLevel] || fillColors[0];
+    ctx.fillRect(barX, barY, Math.max(0, fillEndX - barX), barH);
+  }
+  ctx.restore();
+}
+
+function maxSpecialGaugeSteps() {
+  return soulStepsPerLevel * soulMaxLevel;
+}
+
+function specialGaugePercent(unit) {
+  return Math.min(maxOugi, Math.max(0, ((unit?.soulSteps || 0) / maxSpecialGaugeSteps()) * maxOugi));
+}
+
+function ougiCostToSpecialSteps(cost) {
+  return (cost / maxOugi) * maxSpecialGaugeSteps();
+}
+
+function syncOugiFromSpecialGauge(unit) {
+  if (!unit) return;
+  unit.ougi = specialGaugePercent(unit);
 }
 
 // 繪製上方玩家名稱、段數與段位文字。
@@ -1579,8 +1748,6 @@ function drawBottomPlayerHud() {
   ctx.save();
   drawHudBar(45, 574, 165, 30, hpRatio, "#a057be", "HP"); // 體條位置/大小/填滿顏色
   drawHudBar(262, 574, 165, 30, skillRatio, "#38c2f2", "SP");
-  const ougiRatio = unit ? Math.max(0, unit.ougi / maxOugi) : 0;
-  drawOugiHudBar(45, 612, 382, 22, ougiRatio); // Ougi gauge: 3 segments, activated with Z.
   drawOutlinedText("WPN", 35, 654, 13, "#f0f0df", "center"); // 武字位置/大小/顏色 X:35(間隔15)
   drawMoneyBox(50, 642, "", 95); // 武器名稱框位置/寬度 X:50+100=150
   drawOutlinedText("REP", 175, 654, 13, "#f0f0df", "center"); // 德字位置/大小/顏色 X:180(30)
@@ -1729,10 +1896,9 @@ function drawInventoryHud() {
     drawNinjuSlot(x, ninjuY, 60, 30, ninjuLabels[i], false); // 忍術空框位置/大小，先畫在按鈕後面
   }
 
-  drawNinjuSlot(steelButtonRect.x, steelButtonRect.y, steelButtonRect.w, steelButtonRect.h, "Steel", "steel"); // 鋼鐵按鈕位置/大小，後畫避免被忍術框蓋住
-  drawNinjuSlot(moneyDartButtonRect.x, moneyDartButtonRect.y, moneyDartButtonRect.w, moneyDartButtonRect.h, "Dart", "moneyDart"); // 錢鏢按鈕位置/大小
-  drawNinjuSlot(hotBloodButtonRect.x, hotBloodButtonRect.y, hotBloodButtonRect.w, hotBloodButtonRect.h, "Rage", "hotBlood"); // 熱血按鈕位置/大小
-  drawNinjuSlot(fireToadButtonRect.x, fireToadButtonRect.y, fireToadButtonRect.w, fireToadButtonRect.h, "Toad", "fireToad");
+  for (const button of currentNinjuButtonList()) {
+    drawNinjuSlot(button.x, button.y, button.w, button.h, button.label, button.type);
+  }
 
   drawSmallCounter(476, 644, "#2479a9", String(teamAliveCount("blue"))); // blue 存活數位置/顏色
   drawSmallCounter(476, 670, "#d8d8d8", String(teamAliveCount("grey"))); // grey 存活數位置/顏色
@@ -1817,17 +1983,45 @@ function useItemSlot(index) {
   setMessage("No item in that slot.");
 }
 
+function useNinjuByType(type) {
+  if (type === "moneyDart") useMoneyDart();
+  else if (type === "steel") useSteelNinju();
+  else if (type === "hotBlood") useHotBloodNinju();
+  else if (type === "fireToad") useFireToadNinju();
+  else if (type === "genki") useGenkiNinju();
+  else if (type === "kakki") useKakkiNinju();
+  else if (type === "shinki") useShinkiNinju();
+  else if (attackNinjuConfigs[type]) useAttackNinju(type);
+}
+
 function drawNinjuSlot(x, y, w, h, text, type) {
   const unit = selectedHudUnit();
   const isSteel = type === true || type === "steel";
   const isHotBlood = type === "hotBlood";
+  const isAttackNinju = Boolean(attackNinjuConfigs[type]);
   const isMoneyDart = type === "moneyDart";
   const isFireToad = type === "fireToad";
-  const statusRule = isHotBlood ? hotBloodRule() : isFireToad ? fireToadRule() : steelRule();
-  const active = unit && ((isSteel || isHotBlood) ? ((unit.ninju?.type === type && (isUnitCastingNinju(unit) || isUnitInNinjuGap(unit))) || (isSteel ? isSteelDefenseActive(unit) : isHotBloodActive(unit))) : isMoneyDart ? Boolean(unit.moneyDart) : isFireToad ? (isFireToadCasting(unit) || isFireToadTransforming(unit) || isFireToadActive(unit)) : false);
-  const ready = unit && unit.alive && ((isSteel || isHotBlood || isFireToad) ? unit.skill >= statusRule.cost : isMoneyDart);
+  const isHeal = type === "genki" || type === "kakki" || type === "shinki";
+  const isStatusButton = isSteel || isHotBlood || isHeal || isAttackNinju || isFireToad;
+  const statusRule = statusButtonRule(type);
+  const active = unit && (isStatusButton
+    ? ((unit.ninju?.type === type && (isUnitCastingNinju(unit) || isUnitInNinjuGap(unit))) || (isSteel ? isSteelDefenseActive(unit) : isHotBlood ? isHotBloodActive(unit) : isFireToad ? (isFireToadCasting(unit) || isFireToadTransforming(unit) || isFireToadActive(unit)) : false))
+    : isMoneyDart ? Boolean(unit.moneyDart) : false);
+  const hasAttackSoul = !isAttackNinju || Math.floor((unit?.soulSteps || 0) / soulStepsPerLevel) >= 1;
+  const hasRequiredSkill = !isStatusButton || isAttackNinju || unit.skill >= statusRule.cost;
+  const ready = unit && unit.alive && !isUnitDisabled(unit) && (isStatusButton ? statusRule.available !== false && hasRequiredSkill && hasAttackSoul : isMoneyDart);
   ctx.save();
-  if ((isSteel || isHotBlood || isFireToad) && images.steelButton) {
+  if (isAttackNinju && images.flashButton) {
+    ctx.globalAlpha = ready ? 1 : 0.55;
+    ctx.drawImage(images.flashButton, x, y, w, h);
+    ctx.globalAlpha = 1;
+    drawNinjuButtonText(text, x + w / 2 - 1, y + h / 2 + 1, text.length > 4 ? 13 : 16, "#232323f8", "center");
+  } else if (isHeal && images.healButton) {
+    ctx.globalAlpha = ready ? 1 : 0.55;
+    ctx.drawImage(images.healButton, x, y, w, h);
+    ctx.globalAlpha = 1;
+    drawNinjuButtonText(text, x + w / 2 - 1, y + h / 2 + 1, text.length > 4 ? 13 : 16, "#232323f8", "center");
+  } else if ((isSteel || isHotBlood || isFireToad) && images.steelButton) {
     ctx.globalAlpha = ready ? 1 : 0.55;
     ctx.drawImage(images.steelButton, x, y, w, h);
     ctx.globalAlpha = 1;
@@ -1849,13 +2043,48 @@ function drawNinjuSlot(x, y, w, h, text, type) {
     ctx.fillStyle = "rgba(255,255,255,.35)";
     ctx.fillRect(x, y, w, h);
   }
-  if ((isSteel || isHotBlood) && unit && unit.ninju?.type === type && unit.ninju.queue > 0) {
+  if (isStatusButton && unit && unit.ninju?.type === type && unit.ninju.queue > 0) {
     drawOutlinedText(`x${unit.ninju.queue + 1}`, x + w - 10, y + 8, 12, "#fff2a8", "center");
   }
   ctx.restore();
 }
 
 // 繪製 blue/grey 存活人數的小圓點計數。
+function currentNinjuButtonRects() {
+  return {
+    moneyDart: moneyDartButtonRect,
+    steel: steelButtonRect,
+    hotBlood: hotBloodButtonRect,
+    fireToad: fireToadButtonRect,
+    genki: genkiButtonRect,
+    kakki: kakkiButtonRect,
+    shinki: shinkiButtonRect,
+  };
+}
+
+function currentNinjuSlotRects() {
+  const rects = currentNinjuButtonRects();
+  return [rects.moneyDart, rects.steel, rects.hotBlood, rects.fireToad, rects.genki, rects.kakki];
+}
+
+function currentNinjuButtonList() {
+  const slots = currentNinjuSlotRects();
+  return selectedNinjuLoadout.map((type, index) => {
+    if (!type || !ninjuByType[type]) return null;
+    const source = slots[index] || slots[0];
+    const ninju = ninjuByType[type];
+    return { ...source, x: source.x + index, type, label: ninju.label };
+  }).filter(Boolean);
+}
+
+function statusButtonRule(type) {
+  if (type === "fireToad") return fireToadRule();
+  if (attackNinjuConfigs[type]) return attackNinjuRule(type);
+  if (type === "hotBlood") return hotBloodRule();
+  if (type === "genki" || type === "kakki" || type === "shinki") return healNinjuRule(type);
+  return steelRule();
+}
+
 function drawSmallCounter(x, y, color, text) {
   ctx.save();
   ctx.fillStyle = color;
@@ -1957,21 +2186,11 @@ function pointerDown(event) {
       return;
     }
   }
-  if (pointInRect(state.pointer.x, state.pointer.y, steelButtonRect)) {
-    useSteelNinju();
-    return;
-  }
-  if (pointInRect(state.pointer.x, state.pointer.y, hotBloodButtonRect)) {
-    useHotBloodNinju();
-    return;
-  }
-  if (pointInRect(state.pointer.x, state.pointer.y, fireToadButtonRect)) {
-    useFireToadNinju();
-    return;
-  }
-  if (pointInRect(state.pointer.x, state.pointer.y, moneyDartButtonRect)) {
-    useMoneyDart();
-    return;
+  for (const button of currentNinjuButtonList()) {
+    if (pointInRect(state.pointer.x, state.pointer.y, button)) {
+      useNinjuByType(button.type);
+      return;
+    }
   }
   if (!cell || state.gameOver) return;
 
@@ -2059,6 +2278,7 @@ function pointerUp(event) {
 function addOugi(unit, amount) {
   if (!unit || !Number.isFinite(amount) || amount <= 0) return;
   unit.ougi = Math.min(maxOugi, Math.max(0, (unit.ougi || 0) + amount));
+  unit.soulSteps = Math.min(maxSpecialGaugeSteps(), Math.max(0, (unit.ougi / maxOugi) * maxSpecialGaugeSteps()));
 }
 
 function useWeaponOugi(slot) {
@@ -2078,12 +2298,14 @@ function useWeaponOugi(slot) {
     setMessage(`${unit.name}: this weapon has no Ougi ${slot}.`);
     return;
   }
-  if ((unit.ougi || 0) < definition.cost) {
+  syncOugiFromSpecialGauge(unit);
+  if ((unit.soulSteps || 0) < ougiCostToSpecialSteps(definition.cost)) {
     setMessage(`${unit.name}: Ougi ${slot} needs ${definition.cost} Ougi.`);
     return;
   }
   const now = performance.now();
   unit.ougi = 0;
+  unit.soulSteps = 0;
   unit.ougiCastUntil = now + definition.duration;
   unit.ougiInvincibleAt = unit.ougiCastUntil;
   unit.ougiInvincibleUntil = unit.ougiCastUntil + ougiPostInvincibleMs;
@@ -2120,10 +2342,11 @@ function playOugiSounds(definition) {
 }
 
 function strongestReadyOugiSlot(unit) {
+  syncOugiFromSpecialGauge(unit);
   const slots = ougiDefinitions[unit.weaponKey] || {};
   for (const slot of [3, 2, 1]) {
     const definition = slots[slot];
-    if (definition && (unit.ougi || 0) >= definition.cost) return slot;
+    if (definition && (unit.soulSteps || 0) >= ougiCostToSpecialSteps(definition.cost)) return slot;
   }
   return 0;
 }
@@ -2251,9 +2474,15 @@ function drawOugiAnimations(now) {
     ctx.globalAlpha = progress < 0.9 ? 0.96 : Math.max(0, (1 - progress) / 0.1);
     drawOugiLayerFrame(effectFrames, progress, p, definition);
     drawOugiLayerFrame(bodyFrames, progress, p, definition);
+    drawOugiUnitEyes(unit, cast.direction, p);
     drawOugiLayerFrame(fxFrames, progress, p, definition);
     ctx.restore();
   }
+}
+
+function drawOugiUnitEyes(unit, direction, p) {
+  if (!unit || !p) return;
+  drawUnitEyes({ ...unit, facing: direction || unit.facing || "down" }, p, 0);
 }
 
 function drawOugiLayerFrame(frames, progress, p, definition) {
@@ -2288,12 +2517,11 @@ function updatePanel() {
   unitInfoEl.innerHTML = `
     <div>HP: ${Math.round(unit.hp)}/${unit.maxHp || maxHp}</div>
     <div>SKILL: ${unit.skill.toFixed(1)} / ${maxSkill}</div>
-    <div>OUGI: ${Math.floor(unit.ougi || 0)} / ${maxOugi}</div>
+    <div>SPECIAL: ${Math.floor(specialGaugePercent(unit))} / ${maxOugi}</div>
     <div>GOLD: ${Math.floor(unit.gold || 0)}</div>
     <div>CELL: [${coord.x}, ${coord.y}]</div>
   `;
   skillFillEl.style.width = `${Math.min(100, unit.skill / maxSkill * 100)}%`;
-  if (ougiFillEl) ougiFillEl.style.width = `${Math.min(100, (unit.ougi || 0) / maxOugi * 100)}%`;
 }
 
 // 依隊伍與面向取得角色圖片。
@@ -2304,6 +2532,15 @@ function unitSprite(unit) {
 }
 
 // 依目標位置更新角色面向。
+function unitUseNinjuSprite(unit) {
+  if (!isUnitCastingNinju(unit)) return null;
+  if (unit.ninju?.type === "fireToad") return null;
+  const frames = useNinjuFrames[unit.team] || [];
+  if (!frames.length) return null;
+  const progress = Math.min(0.999, Math.max(0, (performance.now() - unit.ninju.startedAt) / unit.ninju.duration));
+  return frames[Math.floor(progress * frames.length)] || null;
+}
+
 function updateFacing(unit, target) {
   const dx = target.x - unit.x;
   const dy = target.y - unit.y;
@@ -2508,6 +2745,88 @@ function toggleRuleMode() {
   updateRuleModeUi();
 }
 
+function openNinjuEditor() {
+  if (!ninjuEditorEl) return;
+  editNinjuDraft = [...selectedNinjuLoadout];
+  editNinjuSlotIndex = 0;
+  renderNinjuEditor();
+  ninjuEditorEl.hidden = false;
+}
+
+function closeNinjuEditor() {
+  if (ninjuEditorEl) ninjuEditorEl.hidden = true;
+}
+
+function saveNinjuEditor() {
+  selectedNinjuLoadout = normalizedNinjuLoadout(editNinjuDraft);
+  window.localStorage.setItem(ninjuLoadoutStorageKey, JSON.stringify(selectedNinjuLoadout));
+  closeNinjuEditor();
+}
+
+function loadSavedNinjuLoadout() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(ninjuLoadoutStorageKey) || "null");
+    if (Array.isArray(saved) && saved.length === 6 && saved.every((type) => !type || ninjuByType[type])) {
+      return normalizedNinjuLoadout(saved);
+    }
+  } catch (_) {
+    // Fall back to the default six slots when stored data is broken.
+  }
+  return [...defaultNinjuLoadout];
+}
+
+function normalizedNinjuLoadout(loadout) {
+  return Array.from({ length: 6 }, (_, index) => (ninjuByType[loadout[index]] ? loadout[index] : null));
+}
+
+function resetNinjuEditorLoadout() {
+  editNinjuDraft = Array(6).fill(null);
+  editNinjuSlotIndex = 0;
+  renderNinjuEditor();
+}
+
+function renderNinjuEditor() {
+  if (!ninjuEditorSlotsEl || !ninjuEditorListEl) return;
+  ninjuEditorSlotsEl.innerHTML = "";
+  for (let i = 0; i < 6; i++) {
+    const type = editNinjuDraft[i];
+    const ninju = ninjuByType[type] || { label: "Empty" };
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `ninju-slot-choice${i === editNinjuSlotIndex ? " selected" : ""}${type ? "" : " empty"}`;
+    if (type) button.dataset.ninjuType = type;
+    button.textContent = ninju.label;
+    button.addEventListener("click", () => {
+      editNinjuDraft[i] = null;
+      editNinjuSlotIndex = i;
+      renderNinjuEditor();
+    });
+    ninjuEditorSlotsEl.appendChild(button);
+  }
+
+  ninjuEditorListEl.innerHTML = "";
+  for (const ninju of ninjuEditorCatalog) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `ninju-option ${ninju.group}${editNinjuDraft.includes(ninju.type) ? " selected" : ""}`;
+    button.dataset.ninjuType = ninju.type;
+    button.dataset.editorRow = ninju.editorRow;
+    button.style.setProperty("--editor-order", ninju.editorOrder);
+    button.textContent = ninju.label;
+    button.addEventListener("click", () => {
+      const existingIndex = editNinjuDraft.indexOf(ninju.type);
+      if (existingIndex >= 0) editNinjuDraft[existingIndex] = null;
+      const targetIndex = editNinjuSlotIndex >= 0 && editNinjuSlotIndex < 6 ? editNinjuSlotIndex : editNinjuDraft.findIndex((type) => !type);
+      if (targetIndex < 0) return;
+      editNinjuDraft[targetIndex] = ninju.type;
+      const nextEmptyIndex = editNinjuDraft.findIndex((type) => !type);
+      editNinjuSlotIndex = nextEmptyIndex >= 0 ? nextEmptyIndex : targetIndex;
+      renderNinjuEditor();
+    });
+    ninjuEditorListEl.appendChild(button);
+  }
+}
+
 canvas.addEventListener("pointerdown", pointerDown);
 canvas.addEventListener("pointermove", pointerMove);
 window.addEventListener("pointerup", pointerUp);
@@ -2519,6 +2838,10 @@ setupHpInputs();
 setupRoomSlots();
 renderRoomInventoryPanel();
 if (battleStartBtn) battleStartBtn.addEventListener("click", startBattleFromRoom);
+if (teamEditBtn) teamEditBtn.addEventListener("click", openNinjuEditor);
+if (ninjuEditorResetBtn) ninjuEditorResetBtn.addEventListener("click", resetNinjuEditorLoadout);
+if (ninjuEditorCancelBtn) ninjuEditorCancelBtn.addEventListener("click", closeNinjuEditor);
+if (ninjuEditorSaveBtn) ninjuEditorSaveBtn.addEventListener("click", saveNinjuEditor);
 if (musicVolumeInput) musicVolumeInput.addEventListener("input", applyVolumeControls);
 if (sfxVolumeInput) sfxVolumeInput.addEventListener("input", applyVolumeControls);
 if (ruleModeToggle) ruleModeToggle.addEventListener("click", toggleRuleMode);

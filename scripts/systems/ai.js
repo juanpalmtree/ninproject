@@ -48,7 +48,7 @@ function updateAi(dt, now) {
   if (state.gameOver) return;
 
   for (const unit of state.units) {
-    if (canControlUnit(unit) || !unit.alive || unit.respawning || isUnitCastingNinju(unit) || isUnitControlLocked(unit)) continue;
+    if (canControlUnit(unit) || !unit.alive || unit.respawning || isUnitCastingNinju(unit) || isUnitDisabled(unit) || isUnitControlLocked(unit)) continue;
 
     const profile = aiProfile(unit);
     unit.skill = Math.min(maxSkill, unit.skill + aiSkillRegenPerSecond * profile.skillRegenMultiplier * dt);
@@ -153,6 +153,7 @@ function nearestEnemy(unit, enemyTeam) {
 
 // 讓 AI 消耗技移動到指定格子。
 function aiMoveUnit(unit, cell) {
+  if (isUnitDisabled(unit)) return false;
   if (isUnitCastingNinju(unit)) return false;
   if (unit.moneyDart) return false;
   if (!cell || unit.skill < 1) return false;
@@ -332,6 +333,7 @@ function aiIsTrappedByBreakable(unit) {
 }
 
 function tryAiNinjutsu(unit, profile, now) {
+  if (isUnitDisabled(unit)) return false;
   if ((unit.ninjuLockedUntil || 0) > now) return false;
   if (unit.ninju || unit.moneyDart) return false;
 

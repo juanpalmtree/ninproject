@@ -722,3 +722,310 @@ button:hover {
   white-space: nowrap;
   border: 0;
 }
+
+.team-edit-btn {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 56px;
+  height: 30px;
+  z-index: 3;
+  border: 2px solid #111;
+  border-radius: 5px;
+  background: linear-gradient(#fff7c8, #c7862b);
+  color: #181207;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.room-ninju-editor {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  color: #f9f4d8;
+  background: #05084d;
+  border: 3px solid #e9edf8;
+  box-shadow: inset 0 0 0 2px #5360b8, 0 0 0 999px rgba(0, 0, 0, .25);
+  font-weight: 900;
+}
+
+.room-ninju-editor[hidden] {
+  display: none;
+}
+
+.ninju-editor-profile {
+  position: absolute;
+  left: 58px;
+  top: 42px;
+  right: 62px;
+  height: 150px;
+}
+
+.ninju-editor-avatar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 92px;
+  height: 92px;
+  padding: 10px;
+  background: #333;
+  border: 5px solid #9b9a8a;
+  box-shadow: inset 0 0 0 5px #1c1c1c;
+}
+
+.ninju-editor-stats {
+  position: absolute;
+  left: 142px;
+  top: 0;
+  display: grid;
+  gap: 12px;
+  font-size: 18px;
+}
+
+.ninju-editor-stats div,
+.ninju-editor-score div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ninju-editor-stats span,
+.ninju-editor-score span {
+  color: #f7f3ed;
+  font-size: 20px;
+  text-shadow: 2px 2px 0 #151515;
+}
+
+.ninju-editor-stats strong,
+.ninju-editor-score strong {
+  min-width: 72px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  color: #edf550;
+  background: #064f8a;
+  border-radius: 3px;
+}
+
+.ninju-editor-stats button,
+.ninju-editor-title button,
+.ninju-editor-reset,
+.ninju-editor-actions button {
+  height: 34px;
+  padding: 0 16px;
+  color: #1f1f1f;
+  font-size: 16px;
+  font-weight: 900;
+  background: linear-gradient(#fff, #d4d4d4);
+  border: 2px solid #202020;
+  border-radius: 5px;
+}
+
+.ninju-editor-score {
+  position: absolute;
+  left: 462px;
+  top: -12px;
+  display: grid;
+  gap: 12px;
+}
+
+.ninju-editor-score strong {
+  min-width: 116px;
+  background: #053b9b;
+}
+
+.ninju-editor-mark {
+  position: absolute;
+  right: 26px;
+  top: -12px;
+  color: #fb171b;
+  font-size: 86px;
+  line-height: 1;
+  transform: rotate(-12deg);
+}
+
+.ninju-editor-board {
+  position: absolute;
+  left: 54px;
+  right: 54px;
+  bottom: 26px;
+  height: 450px;
+  background: #423821;
+  border: 8px solid rgba(55, 45, 26, .95);
+  box-shadow: inset 0 0 0 4px #2d2415;
+}
+
+.ninju-editor-tabs {
+  position: absolute;
+  left: 26px;
+  top: 56px;
+  display: grid;
+  gap: 18px;
+}
+
+.ninju-editor-tabs button {
+  width: 70px;
+  height: 34px;
+  color: #1616d8;
+  font-size: 15px;
+  font-weight: 900;
+  background: linear-gradient(#fff, #f6eed0);
+  border: 3px solid #111;
+  border-radius: 5px;
+}
+
+.ninju-editor-tabs button.active {
+  background: #f0f22b;
+  color: #26222a;
+}
+
+.ninju-editor-series {
+  position: absolute;
+  left: 138px;
+  top: 138px;
+  display: grid;
+  gap: 45px;
+  z-index: 5;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, .65);
+}
+
+.ninju-editor-series .heal { color: #f02bd7; }
+.ninju-editor-series .support { color: #6a6df2; }
+.ninju-editor-series .attack { color: #ef5034; }
+.ninju-editor-series .special { color: #8fba72; }
+.ninju-editor-series .transform { color: #d24fa1; }
+
+.ninju-editor-panel {
+  position: absolute;
+  left: 128px;
+  top: 20px;
+  right: 48px;
+  height: 380px;
+  padding: 16px 24px;
+  background: #003b24;
+  border: 8px solid #040404;
+  box-shadow: inset 0 0 0 3px #13a0a8;
+}
+
+.ninju-editor-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  color: #dd7831;
+  font-size: 19px;
+  text-shadow: 1px 1px 0 #182316;
+}
+
+.ninju-editor-slot-row {
+  margin: 16px auto 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.ninju-editor-slots {
+  width: fit-content;
+  display: grid;
+  grid-template-columns: repeat(6, 78px);
+  gap: 10px;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, #fff4dc, #e5fff5);
+}
+
+.ninju-slot-choice,
+.ninju-option {
+  height: 30px;
+  border: 0;
+  border-radius: 0;
+  color: #232323;
+  font-size: 14px;
+  font-weight: 900;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .35);
+}
+
+.ninju-slot-choice.selected {
+  filter: brightness(1.04);
+  box-shadow: 0 0 0 2px #f3e94f;
+}
+
+.ninju-slot-choice.empty {
+  color: #60706d;
+  background: linear-gradient(#eef5ef, #cfd8d2);
+  border: 3px solid #365c60;
+  border-radius: 7px;
+}
+
+.ninju-editor-list {
+  display: grid;
+  grid-template-columns: repeat(6, 78px);
+  grid-template-rows: repeat(5, 30px);
+  gap: 16px 10px;
+  align-items: center;
+  transform: translate(45px, 0);
+}
+
+.ninju-option {
+  grid-column: var(--editor-order);
+}
+
+.ninju-option[data-editor-row="heal"] { grid-row: 1; }
+.ninju-option[data-editor-row="support"] { grid-row: 2; transform: translateY(18px); }
+.ninju-option[data-editor-row="attack"] { grid-row: 3; transform: translateY(36px); }
+.ninju-option[data-editor-row="special"] { grid-row: 4; transform: translateY(54px); }
+.ninju-option[data-editor-row="transform"] { grid-row: 5; transform: translateY(72px); }
+
+.ninju-slot-choice[data-ninju-type="moneyDart"],
+.ninju-option[data-ninju-type="moneyDart"] {
+  background-image: url("assets/ninju/money_mark/button_base/3.png");
+}
+
+.ninju-slot-choice[data-ninju-type="flash"],
+.ninju-slot-choice[data-ninju-type="wildfire"],
+.ninju-slot-choice[data-ninju-type="freeze"],
+.ninju-option[data-ninju-type="flash"],
+.ninju-option[data-ninju-type="wildfire"],
+.ninju-option[data-ninju-type="freeze"] {
+  background-image: url("assets/ninju/buttons/1.png");
+}
+
+.ninju-slot-choice[data-ninju-type="steel"],
+.ninju-slot-choice[data-ninju-type="hotBlood"],
+.ninju-slot-choice[data-ninju-type="fireToad"],
+.ninju-option[data-ninju-type="steel"],
+.ninju-option[data-ninju-type="hotBlood"],
+.ninju-option[data-ninju-type="fireToad"] {
+  background-image: url("assets/ninju/buttons/2.png");
+}
+
+.ninju-slot-choice[data-ninju-type="genki"],
+.ninju-slot-choice[data-ninju-type="kakki"],
+.ninju-slot-choice[data-ninju-type="shinki"],
+.ninju-option[data-ninju-type="genki"],
+.ninju-option[data-ninju-type="kakki"],
+.ninju-option[data-ninju-type="shinki"] {
+  background-image: url("assets/ninju/buttons/4.png");
+}
+
+.ninju-option.selected {
+  box-shadow: 0 0 0 3px #f1e535;
+}
+
+.ninju-editor-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}

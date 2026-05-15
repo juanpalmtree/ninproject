@@ -28,6 +28,7 @@ function defeatUnit(unit, attacker = null) {
   unit.ougiInvincibleAt = 0;
   unit.ougiInvincibleUntil = 0;
   unit.ninjuLockedUntil = 0;
+  gainSoul(unit, soulDeathGainSteps);
   if (attacker && attacker !== unit) attacker.kills += 1;
   cancelDragIfPressed(unit);
   startDeathAnimation(unit, p);

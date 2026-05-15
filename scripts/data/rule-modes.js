@@ -8,19 +8,63 @@ const modeRuleProfiles = {
     },
     ninjutsu: {
       steel: {
-        cost: 7,
+        cost: 6,
         castDurationMs: 1500,
         durationMs: 12000,
         defenseMultiplier: 1.7,
       },
       hotBlood: {
-        cost: 7,
+        cost: 6,
         castDurationMs: 1500,
         durationMs: 12000,
         weaponDamageMultiplier: 2,
       },
       moneyDart: {
         damage: 70,
+      },
+      genki: {
+        cost: 2,
+        castDurationMs: 1500,
+        healAmount: 0,
+        effect: "steelNoDefense",
+      },
+      kakki: {
+        available: false,
+        cost: 6,
+        castDurationMs: 1500,
+        healAmount: 100,
+        effect: "selfHeal",
+      },
+      shinki: {
+        available: false,
+        cost: 10,
+        castDurationMs: 1500,
+        healAmount: 100,
+        effect: "teamHeal",
+      },
+      flash: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: 0.3,
+        damage: flashDamage,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: flashHitDisableMs,
+      },
+      wildfire: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: flashHitChance,
+        damage: flashDamage,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: flashHitDisableMs,
+      },
+      freeze: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: 0.35,
+        damage: 50,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: freezeHitDisableMs,
       },
       fireToad: {
         cost: 7,
@@ -50,6 +94,51 @@ const modeRuleProfiles = {
       },
       moneyDart: {
         damage: 100,
+      },
+      genki: {
+        available: false,
+        cost: 3,
+        castDurationMs: 1500,
+        healAmount: 50,
+        effect: "selfHeal",
+      },
+      kakki: {
+        available: false,
+        cost: 6,
+        castDurationMs: 1500,
+        healAmount: 100,
+        effect: "selfHeal",
+      },
+      shinki: {
+        available: false,
+        cost: 10,
+        castDurationMs: 1500,
+        healAmount: 100,
+        effect: "teamHeal",
+      },
+      flash: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: flashHitChance,
+        damage: flashDamage,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: flashHitDisableMs,
+      },
+      wildfire: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: flashHitChance,
+        damage: flashDamage,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: flashHitDisableMs,
+      },
+      freeze: {
+        cost: 7,
+        castDurationMs: 1500,
+        hitChance: 0.35,
+        damage: 50,
+        missDisableMs: flashMissDisableMs,
+        hitDisableMs: freezeHitDisableMs,
       },
       fireToad: {
         cost: 7,
@@ -98,6 +187,45 @@ function hotBloodRule() {
 function moneyDartRule() {
   const fallback = { damage: moneyDartDamage };
   return { ...fallback, ...(currentRuleProfile().ninjutsu?.moneyDart || {}) };
+}
+
+function healNinjuRule(type) {
+  const fallbackAmounts = {
+    genki: genkiHealAmount,
+    kakki: kakkiHealAmount,
+    shinki: shinkiHealAmount,
+  };
+  const fallback = {
+    cost: 3,
+    castDurationMs: steelCastDuration,
+    healAmount: type === "genki" ? 50 : (fallbackAmounts[type] ?? genkiHealAmount),
+    effect: "selfHeal",
+  };
+  return { ...fallback, ...(currentRuleProfile().ninjutsu?.[type] || {}) };
+}
+
+function flashRule() {
+  return attackNinjuRule("flash");
+}
+
+function wildfireRule() {
+  return attackNinjuRule("wildfire");
+}
+
+function freezeRule() {
+  return attackNinjuRule("freeze");
+}
+
+function attackNinjuRule(type) {
+  const fallback = {
+    cost: flashNinjuCost,
+    castDurationMs: flashCastDuration,
+    hitChance: flashHitChance,
+    damage: flashDamage,
+    missDisableMs: flashMissDisableMs,
+    hitDisableMs: flashHitDisableMs,
+  };
+  return { ...fallback, ...(currentRuleProfile().ninjutsu?.[type] || {}) };
 }
 
 function fireToadRule() {
