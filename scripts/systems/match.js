@@ -32,7 +32,7 @@ function defeatUnit(unit, attacker = null) {
   if (attacker && attacker !== unit) attacker.kills += 1;
   cancelDragIfPressed(unit);
   startDeathAnimation(unit, p);
-  playSound("death");
+  playSound(unit.isYashao ? "yashaoKilled" : "death");
   setMessage(`${unit.name} defeated.`);
   checkVictory();
 }

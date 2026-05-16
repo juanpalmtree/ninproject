@@ -17,7 +17,7 @@ function internalCellCoord(cell) {
 
 // 尋找指定格子上的角色。
 function unitAt(x, y) {
-  return state.units.find((u) => u.alive && u.x === x && u.y === y);
+  return state.units.find((u) => u.alive && u.x === x && u.y === y && !(typeof isYashaoHiddenFromMatch === "function" && isYashaoHiddenFromMatch(u)));
 }
 
 // 判斷指定格子是否被角色佔用。

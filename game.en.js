@@ -10,6 +10,8 @@ const musicVolumeInput = document.querySelector("#musicVolume");
 const sfxVolumeInput = document.querySelector("#sfxVolume");
 const ruleModeToggle = document.querySelector("#ruleModeToggle");
 const ruleModeCheckbox = document.querySelector("#ruleModeCheckbox");
+const modePreviewBtn = document.querySelector("#modePreviewBtn");
+const modeTitleEl = document.querySelector("#modeTitle");
 const teamEditBtn = document.querySelector("#teamEditBtn");
 const roomInventoryBtn = document.querySelector("#roomInventoryBtn");
 const roomInventoryPanel = document.querySelector("#roomInventoryPanel");
@@ -20,6 +22,8 @@ const ninjuEditorListEl = document.querySelector("#ninjuEditorList");
 const ninjuEditorResetBtn = document.querySelector("#ninjuEditorReset");
 const ninjuEditorCancelBtn = document.querySelector("#ninjuEditorCancel");
 const ninjuEditorSaveBtn = document.querySelector("#ninjuEditorSave");
+const ninjuEditorLevelEl = document.querySelector("#ninjuEditorLevel");
+const ninjuEditorRoleEl = document.querySelector("#ninjuEditorRole");
 const roomCardEls = Array.from(document.querySelectorAll(".room-player-card"));
 const weaponSelectEls = Array.from(document.querySelectorAll(".room-weapon-select"));
 const controlSelectEls = Array.from(document.querySelectorAll(".room-control-select"));
@@ -54,27 +58,36 @@ const state = {
   deathAnimations: [],
   pendingResult: null,
   resultOverlayAt: 0,
+  gameMode: "random",
+  yashaoEffects: [],
   ougiKeyDown: false,
   useOriginalMode: false,
   playerStorage: {},
 };
 
-// 眼睛貼圖位置（相對角色中心）。X 正值往右，Y 正值往下。
-// 你可以直接調這裡微調外觀。
+// Eye overlays are positioned relative to the unit center.
+// Positive x moves right; positive y moves down.
 const eyeOffsets = {
-  down: { x: -14, y: -25, w: 30, h: 13 },  // 下：雙眼；x/y 是 offset，w/h 是眼睛大小。
-  up: null,                                  // 上：不顯示眼睛；要顯示時改成 {x,y,w,h}。
-  right: { x: 3, y: -26, w: 20, h: 15 },   // 右：單眼；x 加大往右、y 加大往下。
-  left: { x: -19, y: -26, w: 20, h: 15 },  // 左：單眼；通常和 right 用不同 x 來貼頭型。
+  down: { x: -14, y: -25, w: 30, h: 13 },
+  up: null,
+  right: { x: 3, y: -26, w: 20, h: 15 },
+  left: { x: -19, y: -26, w: 20, h: 15 },
 };
 const steelOutlineCache = new WeakMap();
 const hotBloodOutlineCache = new WeakMap();
 const fireToadFrameBoundsCache = new WeakMap();
+const ougiFrameBoundsCache = new WeakMap();
+const ougiBodyTeamFrameCache = new WeakMap();
+// Match-end win/loss animations advance at the same frame speed.
+const matchEndFrameMs = 75;
+const yashaoHiddenIntroMs = 3000;
+const yashaoFrozenIntroMs = 3000;
 const itemSlotStartX = 510;
 const itemSlotY = 558;
 const itemSlotW = 38;
 const itemSlotH = 34;
 const itemSlotGap = 6;
+const progressionUiVisible = false;
 const ninjuCatalog = [
   { type: "moneyDart", label: "Dart", group: "projectile", editorRow: "special", editorOrder: 1 },
   { type: "steel", label: "Steel", group: "buff", editorRow: "support", editorOrder: 1 },
@@ -85,6 +98,11 @@ const ninjuCatalog = [
   { type: "flash", label: "Flash", group: "attack", editorRow: "attack", editorOrder: 1 },
   { type: "wildfire", label: "Wild", group: "attack", editorRow: "attack", editorOrder: 2 },
   { type: "freeze", label: "Freeze", group: "attack", editorRow: "attack", editorOrder: 3 },
+  { type: "seven", label: "Seven", group: "special", editorRow: "special", editorOrder: 2 },
+  { type: "angel", label: "Angel", group: "special", editorRow: "special", editorOrder: 3 },
+  { type: "death", label: "Death", group: "special", editorRow: "special", editorOrder: 4 },
+  { type: "butsumetsu", label: "Butsu", group: "special", editorRow: "special", editorOrder: 5 },
+  { type: "mouryo", label: "Mouryo", group: "special", editorRow: "special", editorOrder: 6 },
   { type: "fireToad", label: "Toad", group: "transform", editorRow: "transform", editorOrder: 1 },
 ];
 const ninjuByType = Object.fromEntries(ninjuCatalog.map((ninju) => [ninju.type, ninju]));
@@ -100,7 +118,6 @@ let editNinjuDraft = [...selectedNinjuLoadout];
 let editNinjuSlotIndex = 0;
 
 // ===== Asset Loading =====
-// 載入所有遊戲圖片與動畫影格。
 function loadImages() {
   const staticImages = Object.entries(imageSources).map(([key, src]) => new Promise((resolve) => {
     const img = new Image();
@@ -130,6 +147,12 @@ function loadImages() {
   const smallIceSummonImages = smallIceSummonFrameSources.map((src, index) => loadFrame(src, smallIceSummonFrames, index));
   const smallIceDamagedImages = smallIceDamagedFrameSources.map((src, index) => loadFrame(src, smallIceDamagedFrames, index));
   const smallIceBreakImages = smallIceBreakFrameSources.map((src, index) => loadFrame(src, smallIceBreakFrames, index));
+  const specialNinjuImages = Object.entries(specialNinjuFrameSources).flatMap(([type, sources]) => (
+    sources.map((src, index) => loadFrame(src, specialNinjuFrames[type], index))
+  ));
+  const specialNinjuHitImages = Object.entries(specialNinjuHitFrameSources).flatMap(([type, sources]) => (
+    sources.map((src, index) => loadFrame(src, specialNinjuHitFrames[type], index))
+  ));
   const damageFailImages = damageFailFrameSources.map((src, index) => loadFrame(src, damageFailFrames, index));
   const faintedImages = faintedFrameSources.map((src, index) => loadFrame(src, faintedFrames, index));
   const damageSuccessSmallImages = damageSuccessSmallFrameSources.map((src, index) => loadFrame(src, damageSuccessSmallFrames, index));
@@ -180,12 +203,22 @@ function loadImages() {
       ))
     ))
   ));
+  const yashaoImages = [
+    ...Object.entries(yashaoFrameSources.idle).flatMap(([direction, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.idle[direction], index))),
+    ...Object.entries(yashaoFrameSources.arrive).flatMap(([direction, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.arrive[direction], index))),
+    ...Object.entries(yashaoFrameSources.weapon).flatMap(([direction, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.weapon[direction], index))),
+    ...Object.entries(yashaoFrameSources.weaponFx).flatMap(([direction, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.weaponFx[direction], index))),
+    ...Object.entries(yashaoFrameSources.ougi).flatMap(([slot, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.ougi[slot], index))),
+    ...Object.entries(yashaoFrameSources.ougiFx).flatMap(([slot, sources]) => sources.map((src, index) => loadFrame(src, yashaoFrames.ougiFx[slot], index))),
+    ...yashaoFrameSources.enter.map((src, index) => loadFrame(src, yashaoFrames.enter, index)),
+    ...yashaoFrameSources.showFingers.map((src, index) => loadFrame(src, yashaoFrames.showFingers, index)),
+    ...yashaoFrameSources.faint.map((src, index) => loadFrame(src, yashaoFrames.faint, index)),
+  ];
   const chargeRedImages = chargeRedFrameSources.map((src, index) => loadFrame(src, chargeRedFrames, index));
   const chargeYellowImages = chargeYellowFrameSources.map((src, index) => loadFrame(src, chargeYellowFrames, index));
-  return Promise.all([...staticImages, ...ninjuImages, ...atkUpImages, ...regenHpSmallImages, ...regenHpLargeImages, ...smallThunderSummonImages, ...smallThunderDamagedImages, ...smallFireSummonImages, ...smallFireDamagedImages, ...smallIceSummonImages, ...smallIceDamagedImages, ...smallIceBreakImages, ...damageFailImages, ...faintedImages, ...damageSuccessSmallImages, ...damageSuccessMiddleImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...useNinjuImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages]);
+  return Promise.all([...staticImages, ...ninjuImages, ...atkUpImages, ...regenHpSmallImages, ...regenHpLargeImages, ...smallThunderSummonImages, ...smallThunderDamagedImages, ...smallFireSummonImages, ...smallFireDamagedImages, ...smallIceSummonImages, ...smallIceDamagedImages, ...smallIceBreakImages, ...specialNinjuImages, ...specialNinjuHitImages, ...damageFailImages, ...faintedImages, ...damageSuccessSmallImages, ...damageSuccessMiddleImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...useNinjuImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages, ...yashaoImages]);
 }
 
-// 載入單張動畫影格，成功後放到指定陣列位置。
 function loadFrame(src, target, index) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -199,7 +232,6 @@ function loadFrame(src, target, index) {
 }
 
 // ===== Game Setup =====
-// 重設一局遊戲的角色、地圖物件、倒數與狀態。
 function resetGame() {
   const now = performance.now();
   const keepRoomState = state.inRoom;
@@ -213,6 +245,7 @@ function resetGame() {
   state.deathAnimations = [];
   state.pendingResult = null;
   state.resultOverlayAt = 0;
+  state.yashaoEffects = [];
   state.ougiKeyDown = false;
   state.selectedId = 1;
   state.pressedUnit = null;
@@ -232,22 +265,29 @@ function resetGame() {
   updatePanel();
 }
 
-// 建立一個角色資料物件，包含血量、技、AI 與統計資料。
 function makeUnit(id, name, team, x, y, weaponKey = defaultWeaponKey, controlMode = "ai_beginner", hpMax = maxHp, roomSlotKey = "") {
   const aiNextThink = controlMode === "player" ? 0 : performance.now() + 520 + Math.random() * 500;
-  const storage = roomSlotKey ? storageForRoomSlotKey(roomSlotKey) : { gold: 0, items: {}, itemSlots: [] };
-  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, soulSteps: 0, gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", disabledUntil: 0, invincibleUntil: 0, moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
+  const storage = roomSlotKey ? storageForRoomSlotKey(roomSlotKey) : createDefaultPlayerStorage();
+  const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
+  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, soulSteps: 0, exp: progression.exp, level: progression.level, rankTitle: progression.rankTitle, classBranch: storage.classBranch || "", gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", disabledUntil: 0, invincibleUntil: 0, moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
 }
 
 function roomStorageKey(team, slot) {
   return `${team}${slot}`;
 }
 
+function createDefaultPlayerStorage() {
+  return { exp: defaultPlayerExp, classBranch: "", gold: 0, items: {}, itemSlots: [] };
+}
+
 function storageForRoomSlotKey(key) {
-  if (!state.playerStorage[key]) state.playerStorage[key] = { gold: 0, items: {}, itemSlots: [] };
+  if (!state.playerStorage[key]) state.playerStorage[key] = createDefaultPlayerStorage();
   const storage = state.playerStorage[key];
   if (!storage.items) storage.items = {};
   if (!storage.itemSlots) storage.itemSlots = [];
+  if (!Number.isFinite(Number(storage.exp))) storage.exp = defaultPlayerExp;
+  storage.exp = Math.max(0, Math.floor(Number(storage.exp) || 0));
+  storage.classBranch = storage.classBranch || "";
   storage.gold = Math.max(0, Math.floor(Number(storage.gold) || 0));
   return storage;
 }
@@ -255,13 +295,41 @@ function storageForRoomSlotKey(key) {
 function syncUnitStorage(unit) {
   if (!unit?.roomSlotKey) return;
   const storage = storageForRoomSlotKey(unit.roomSlotKey);
+  storage.exp = Math.max(0, Math.floor(Number(unit.exp) || 0));
+  storage.classBranch = unit.classBranch || "";
   storage.gold = Math.max(0, Math.floor(Number(unit.gold) || 0));
   storage.items = { ...(unit.items || {}) };
   storage.itemSlots = [...(unit.itemSlots || [])];
+  refreshUnitProgression(unit);
   renderRoomInventoryPanel();
+  updateRoomProgressionLabels();
 }
 
-// 依照兩隊起始範圍隨機產生本局角色位置。
+function refreshUnitProgression(unit) {
+  if (!unit) return null;
+  const progression = progressionSummaryForExp(unit.exp, unit.classBranch);
+  unit.exp = progression.exp;
+  unit.level = progression.level;
+  unit.rankTitle = progression.rankTitle;
+  return progression;
+}
+
+function formatProgressionLine(storage) {
+  const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
+  return `Lv. ${progression.level} Role: ${progression.rankTitle}`;
+}
+
+function updateRoomProgressionLabels() {
+  if (!progressionUiVisible) return;
+  roomCardEls.forEach((card) => {
+    if (!card.classList.contains("active-slot")) return;
+    const levelEl = card.querySelector(".room-level");
+    if (!levelEl) return;
+    const storage = storageForRoomSlotKey(roomStorageKey(card.dataset.team, Number(card.dataset.slot)));
+    levelEl.textContent = formatProgressionLine(storage);
+  });
+}
+
 function buildStartingUnits() {
   const units = [];
   let id = 1;
@@ -292,11 +360,25 @@ function buildStartingUnits() {
   };
 
   addTeam("blue", "Blue");
-  addTeam("grey", "Grey");
+  if (state.gameMode === "yashao") {
+    const boss = makeUnit(id, "Yashao", "grey", 17, 6, "weapon19", "ai_yashao", 1200, "");
+    const introStartedAt = performance.now();
+    const visibleAt = introStartedAt + yashaoHiddenIntroMs;
+    const activeAt = visibleAt + yashaoFrozenIntroMs;
+    boss.isYashao = true;
+    boss.skill = maxSkill;
+    boss.yashaoHiddenUntil = visibleAt;
+    boss.yashaoFrozenUntil = activeAt;
+    boss.aiNextThink = activeAt;
+    boss.invincibleUntil = visibleAt;
+    boss.yashaoAction = { type: "enter", startedAt: visibleAt, duration: 720 };
+    units.push(boss);
+  } else {
+    addTeam("grey", "Grey");
+  }
   return units;
 }
 
-// 房間武器下拉選單的預設內容；第一個 select 寫在 HTML，其餘空 select 由這裡補齊，避免維護十份 option。
 function setupWeaponSelects() {
   if (weaponSelectEls.length === 0) return;
   const optionsHtml = weaponDefinitions.map((weapon) => (
@@ -309,7 +391,6 @@ function setupWeaponSelects() {
   });
 }
 
-// 房間控制模式下拉選單的預設內容；玩家代表不跑 AI，可由使用者操作。
 function setupControlSelects() {
   if (controlSelectEls.length === 0) return;
   const optionsHtml = `
@@ -331,7 +412,6 @@ function setupControlSelects() {
   });
 }
 
-// 房間血量輸入框預設與範圍保護。
 function setupHpInputs() {
   if (hpInputEls.length === 0) return;
   hpInputEls.forEach((input) => {
@@ -345,7 +425,6 @@ function setupHpInputs() {
   });
 }
 
-// 房間卡片新增/刪除：預設 blue1、grey1 啟用，其餘顯示新增。
 function setupRoomSlots() {
   roomCardEls.forEach((card) => {
     const team = card.dataset.team;
@@ -359,9 +438,9 @@ function setupRoomSlots() {
     if (addBtn) {
       addBtn.addEventListener("click", () => {
         card.classList.add("active-slot");
-        storageForRoomSlotKey(roomStorageKey(team, slot));
+        const storage = storageForRoomSlotKey(roomStorageKey(team, slot));
         if (nameEl) nameEl.textContent = `${team}${slot}`;
-        if (levelEl) levelEl.textContent = `id-${team}${slot}`;
+        if (levelEl && progressionUiVisible) levelEl.textContent = formatProgressionLine(storage);
         if (controlEl) controlEl.value = "ai_beginner";
         renderRoomInventoryPanel();
       });
@@ -377,6 +456,7 @@ function setupRoomSlots() {
   roomCardEls.forEach((card) => {
     if (card.classList.contains("active-slot")) storageForRoomSlotKey(roomStorageKey(card.dataset.team, Number(card.dataset.slot)));
   });
+  updateRoomProgressionLabels();
 }
 
 function describeStoredItems(storage) {
@@ -397,9 +477,15 @@ function renderRoomInventoryPanel() {
     const key = roomStorageKey(card.dataset.team, Number(card.dataset.slot));
     const storage = storageForRoomSlotKey(key);
     const label = card.querySelector(".room-name")?.textContent || key;
+    const progression = progressionUiVisible ? progressionSummaryForExp(storage.exp, storage.classBranch) : null;
+    const progressionHtml = progression ? `
+        <span>Lv. ${progression.level} ${progression.rankTitle}</span>
+        <span>EXP: ${progression.nextLevelExp === null ? "MAX" : `${progression.exp}/${progression.nextLevelExp}`}</span>
+    ` : "";
     return `
       <div class="room-inventory-row">
         <strong>${label}</strong>
+        ${progressionHtml}
         <span>Gold: ${storage.gold || 0}</span>
         <em>${describeStoredItems(storage)}</em>
       </div>
@@ -413,13 +499,11 @@ function toggleRoomInventoryPanel() {
   if (!roomInventoryPanel.hidden) renderRoomInventoryPanel();
 }
 
-// 依房間卡片上的隊伍與位置，取得該角色進戰鬥後要使用的武器。
 function selectedWeaponKey(team, slot) {
   const select = weaponSelectEls.find((element) => element.dataset.team === team && Number(element.dataset.slot) === slot);
   return weaponDefinitionByKey[select?.value] ? select.value : defaultWeaponKey;
 }
 
-// 依房間卡片上的隊伍與位置，取得該角色進戰鬥後是玩家操控或電腦操控。
 function selectedControlMode(team, slot) {
   const select = controlSelectEls.find((element) => element.dataset.team === team && Number(element.dataset.slot) === slot);
   if (select?.value === "player") return "player";
@@ -428,7 +512,6 @@ function selectedControlMode(team, slot) {
   return "ai_beginner";
 }
 
-// 依房間卡片上的隊伍與位置，取得該角色進戰鬥後使用的最大血量。
 function selectedHpValue(team, slot) {
   const input = hpInputEls.find((element) => element.dataset.team === team && Number(element.dataset.slot) === slot);
   const value = Number(input?.value);
@@ -436,7 +519,6 @@ function selectedHpValue(team, slot) {
   return clamp(Math.round(value), 1, 9999);
 }
 
-// 把指定玩家座標矩形範圍內的格子打散，用於隨機出生。
 function shuffledCellsInArea(area) {
   const cells = [];
   const xMin = Math.min(area.xMin, area.xMax);
@@ -458,7 +540,6 @@ function shuffledCellsInArea(area) {
 }
 
 // ===== Main Loop =====
-// 主遊戲迴圈，更新狀態並依序繪製全部畫面。
 function draw(now = performance.now()) {
   try {
     const dt = Math.min(0.05, (now - state.lastFrame) / 1000);
@@ -501,7 +582,6 @@ function draw(now = performance.now()) {
 }
 
 // ===== Per-Frame Updates =====
-// 處理玩家長按角色時的集技規則。
 function updateCharging(dt) {
   if (!state.pressedUnit || state.gameOver) return;
   if (!canUnitMoveNow(state.pressedUnit)) return;
@@ -518,7 +598,6 @@ function updateCharging(dt) {
   setMessage(`${state.pressedUnit.name} charging skill ${state.pressedUnit.skill.toFixed(1)} / ${maxSkill}`);
 }
 
-// 處理開場倒數結束後正式開始比賽。
 function updateMatchState(now) {
   updatePendingMatchResult(now);
   if (state.matchStart || state.result) return;
@@ -534,13 +613,11 @@ function updateMatchState(now) {
   }
 }
 
-// 判斷目前是否在可以操作與 AI 行動的正式對戰中。
 function isMatchActive() {
   return Boolean(!state.inRoom && state.matchStart && !state.result && !state.gameOver);
 }
 
 // ===== Rendering: Background / Board =====
-// 繪製整體背景與 UI 底板。
 function drawBackdrop() {
   ctx.fillStyle = "#062f37";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -558,7 +635,6 @@ function drawBackdrop() {
   drawFrame();
 }
 
-// 繪製下方 UI 面板區塊。
 function drawUiPanels() {
   const bottom = ui.bottomTop;
   ctx.save();
@@ -572,7 +648,6 @@ function drawUiPanels() {
   ctx.restore();
 }
 
-// 繪製遊戲外框與分隔線。
 function drawFrame() {
   const bottom = ui.bottomTop;
   ctx.save();
@@ -590,7 +665,6 @@ function drawFrame() {
   ctx.restore();
 }
 
-// 繪製外框角落的圓形裝飾。
 function drawCornerGem(x, y) {
   ctx.save();
   ctx.fillStyle = "#224d43";
@@ -607,7 +681,6 @@ function drawCornerGem(x, y) {
   ctx.restore();
 }
 
-// 繪製地圖底圖、樹牆與基本場景。
 function drawBoard() {
   for (let y = 0; y < grid.rows; y++) {
     for (let x = 0; x < grid.cols; x++) {
@@ -632,10 +705,11 @@ function drawBoard() {
 }
 
 // ===== Rendering: Units / Objects / Effects =====
-// 繪製所有角色、名字、血條與手持忍術物件。
 function drawUnits() {
+  const now = performance.now();
   for (const unit of state.units) {
     if (!unit.alive) continue;
+    if (isYashaoHiddenFromMatch(unit, now)) continue;
     const p = unitPosition(unit);
     const resultActor = activeMatchEndActor(unit);
     const selected = unit.id === state.selectedId && !resultActor;
@@ -662,6 +736,16 @@ function drawUnits() {
       ctx.arc(p.x, p.y - 10, 34, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+    }
+
+    if (unit.isYashao) {
+      drawYashaoUnit(unit, p, now);
+      drawHp(unit, p.x, p.y + 30);
+      ctx.fillStyle = "#f8fff9";
+      ctx.font = "14px Microsoft JhengHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(unit.name, p.x, p.y + 52);
+      continue;
     }
 
     const useNinjuSprite = unitUseNinjuSprite(unit);
@@ -703,7 +787,6 @@ function drawUnits() {
   }
 }
 
-// 集技時繪製藍色外圈、放大的紅火與較小的黃火疊圖。
 // Draws the skull death animation after the unit disappears from the board.
 function drawDeathAnimations(now) {
   if (!state.deathAnimations) return;
@@ -834,49 +917,106 @@ function fireToadAnimationFrame(unit) {
   return null;
 }
 
+function isYashaoHiddenFromMatch(unit, now = performance.now()) {
+  return Boolean(unit?.isYashao && unit.yashaoHiddenUntil && now < unit.yashaoHiddenUntil);
+}
+
+function drawYashaoUnit(unit, p, now) {
+  const action = activeYashaoAction(unit, now);
+  const facing = unit.facing || "down";
+  let frame = null;
+  let scale = 0.78;
+
+  if (action?.type === "enter") {
+    frame = frameAt(yashaoFrames.enter, now - action.startedAt, action.duration);
+  } else if (action?.type === "weapon") {
+    frame = frameAt(yashaoFrames.weapon[facing], now - action.startedAt, action.duration);
+    drawYashaoFxFrame(yashaoFrames.weaponFx[facing], p, now - action.startedAt, action.duration, 1.0);
+  } else if (action?.type === "ougi") {
+    frame = frameAt(yashaoFrames.ougi[action.slot] || [], now - action.startedAt, action.duration);
+    drawYashaoFxFrame(yashaoFrames.ougiFx[action.slot] || [], p, now - action.startedAt, action.duration, 0.72);
+    scale = 0.64;
+  } else if (unit.moveT < 1) {
+    frame = frameAt(yashaoFrames.arrive[facing], unit.moveT, 1);
+  }
+
+  frame = frame || yashaoFrames.idle[facing]?.[0] || yashaoFrames.idle.down?.[0] || images.greyDown;
+  if (!frame) return;
+  drawCenteredUnitFrame(frame, p.x, p.y - 14, 80, scale);
+}
+
+function activeYashaoAction(unit, now) {
+  const action = unit?.yashaoAction;
+  if (!action) return null;
+  if (now - action.startedAt >= action.duration) {
+    unit.yashaoAction = null;
+    return null;
+  }
+  return action;
+}
+
+function drawYashaoFxFrame(frames, p, elapsed, duration, scaleMultiplier = 1) {
+  const frame = frameAt(frames, elapsed, duration);
+  if (!frame) return;
+  drawCenteredUnitFrame(frame, p.x, p.y - 18, 170, scaleMultiplier);
+}
+
+function frameAt(frames, elapsed, duration) {
+  const loaded = (frames || []).filter(Boolean);
+  if (loaded.length === 0) return null;
+  const progress = typeof elapsed === "number" && duration ? Math.min(0.999, Math.max(0, elapsed / duration)) : 0;
+  return loaded[Math.min(loaded.length - 1, Math.floor(progress * loaded.length))];
+}
+
+function drawCenteredUnitFrame(frame, centerX, centerY, targetSize, scaleMultiplier = 1) {
+  const scale = Math.min(targetSize / Math.max(1, frame.width, frame.height), 1.6) * scaleMultiplier;
+  const w = frame.width * scale;
+  const h = frame.height * scale;
+  ctx.drawImage(frame, centerX - w / 2, centerY - h / 2, w, h);
+}
+
 function shouldAnimateFireToad(unit) {
   return (unit.moveT || 1) < 1 || (state.pressedUnit === unit && state.dragMoved);
 }
 
 function drawChargeEffect(p, layer = "all") {
-  const now = performance.now(); // 目前時間，用來切換集技火焰動畫影格。
-  const redFrame = chargeRedFrames[Math.floor(now / 120) % chargeRedFrames.length]; // 紅色火焰影格，120ms 換一張。
-  const yellowFrame = chargeYellowFrames[Math.floor(now / 120) % chargeYellowFrames.length]; // 黃色火焰影格，120ms 換一張。
+  const now = performance.now();
+  const redFrame = chargeRedFrames[Math.floor(now / 120) % chargeRedFrames.length];
+  const yellowFrame = chargeYellowFrames[Math.floor(now / 120) % chargeYellowFrames.length];
 
   ctx.save();
-  ctx.globalAlpha = 0.82; // 外圈與紅火整體透明度。
+  ctx.globalAlpha = 0.82;
   if ((layer === "all" || layer === "back") && images.chargeOuter) {
-    ctx.drawImage(images.chargeOuter, p.x - 39, p.y - 55, 78, 78); // 藍色外圈位置/大小，畫在角色後方。
+    ctx.drawImage(images.chargeOuter, p.x - 39, p.y - 55, 78, 78);
   }
   if ((layer === "all" || layer === "front") && redFrame) {
-    const w = 50; // 紅色火焰寬度，越大火越寬。
-    const h = 60; // 紅色火焰高度，越大火越高。
-    ctx.drawImage(redFrame, p.x - w / 2 - 5, p.y - 65, w, h); // 紅色火焰位置，p.y - 50 越小越往上。
+    const w = 50;
+    const h = 60;
+    ctx.drawImage(redFrame, p.x - w / 2 - 5, p.y - 65, w, h);
   }
   if ((layer === "all" || layer === "front") && yellowFrame) {
-    const w = 32; // 黃色火焰寬度，會疊在紅火上。
-    const h = 38; // 黃色火焰高度。
-    ctx.globalAlpha = 0.72; // 黃色火焰透明度。
-    ctx.drawImage(yellowFrame, p.x - w / 2 - 5, p.y - 55, w, h); // 黃色火焰位置，p.y - 45 越小越往上。
+    const w = 32;
+    const h = 38;
+    ctx.globalAlpha = 0.72;
+    ctx.drawImage(yellowFrame, p.x - w / 2 - 5, p.y - 55, w, h);
   }
   ctx.restore();
 }
 
-// 鋼鐵防禦的藍光描邊：用角色 sprite 本身當遮罩，往外偏移 3px 畫出貼角色輪廓的細線。
 function drawSteelSpriteOutline(sprite, p, bob = 0) {
-  drawBuffSpriteOutline(sprite, p, bob, steelOutlineCache, "#5feeff", "#39e8ff", 2, 7); // 鋼鐵外圈：fill 顏色、shadow 顏色、線寬、發光強度。
+  drawBuffSpriteOutline(sprite, p, bob, steelOutlineCache, "#5feeff", "#39e8ff", 2, 7);
 }
 
 function drawHotBloodSpriteOutline(sprite, p, bob = 0) {
-  drawBuffSpriteOutline(sprite, p, bob, hotBloodOutlineCache, "#ff2d24", "#ff1f1a", 2, 7); // 熱血外圈：紅色系，線寬目前跟鋼鐵一致。
+  drawBuffSpriteOutline(sprite, p, bob, hotBloodOutlineCache, "#ff2d24", "#ff1f1a", 2, 7);
 }
 
 function drawBuffSpriteOutline(sprite, p, bob, cache, fill, shadow, outlineWidth, shadowBlur) {
   const mask = spriteColorMask(sprite, cache, fill);
   if (!mask) return;
-  const x = p.x - 31; // 外圈相對角色 X offset；改這裡可整體左右平移外圈。
-  const y = p.y - 47 + bob; // 外圈相對角色 Y offset；改這裡可整體上下平移外圈。
-  const pulse = 0.66 + Math.sin(performance.now() / 170) * 0.1; // 透明度脈動強度/速度。
+  const x = p.x - 31;
+  const y = p.y - 47 + bob;
+  const pulse = 0.66 + Math.sin(performance.now() / 170) * 0.1;
 
   ctx.save();
   ctx.globalAlpha = pulse;
@@ -892,7 +1032,6 @@ function drawBuffSpriteOutline(sprite, p, bob, cache, fill, shadow, outlineWidth
   ctx.restore();
 }
 
-// 快取上色後的 sprite 遮罩，避免每幀重新建立。
 function spriteColorMask(sprite, cache, fill) {
   if (cache.has(sprite)) return cache.get(sprite);
   const canvas = document.createElement("canvas");
@@ -915,12 +1054,10 @@ function activeBuffAuraType(unit) {
   return "";
 }
 
-// 統一 offset 規則：x 正值往右、y 正值往上。
 function applyOffset(anchor, offset) {
   return { x: anchor.x + offset.x, y: anchor.y - offset.y };
 }
 
-// 角色平常手上顯示苦無武器。
 function drawHeldKunai(unit, p) {
   if (activeMoneyDartCast(unit)) return;
   const frame = weaponFrames[unit.weaponKey || defaultWeaponKey]?.hand?.[unit.facing]?.[0];
@@ -939,7 +1076,6 @@ function drawHeldKunai(unit, p) {
   ctx.drawImage(frame, at.x, at.y, w, h);
 }
 
-// 重生後在角色上方畫大箭頭，提示玩家角色回到場上。
 function drawRespawnPointer(unit, p) {
   const now = performance.now();
   if (!unit.respawnTipUntil || now >= unit.respawnTipUntil) return;
@@ -962,7 +1098,6 @@ function drawRespawnPointer(unit, p) {
   ctx.restore();
 }
 
-// 繪製角色準備錢鏢時手上拿著的金色物件。
 function drawOugiLockIndicator(unit, p) {
   const now = performance.now();
   const until = Math.max(unit.ougiLockVisibleUntil || 0, unit.ougiCcUntil || 0);
@@ -1020,7 +1155,6 @@ function drawHeldMoneyDart(unit, p) {
   ctx.restore();
 }
 
-// 依照時間取得錢鏢準備階段的動畫影格。
 function moneyDartReadyFrame(elapsed) {
   const frames = moneyDartReadyFrames.filter(Boolean);
   if (frames.length === 0) return null;
@@ -1029,7 +1163,6 @@ function moneyDartReadyFrame(elapsed) {
   return frames[index];
 }
 
-// 繪製地圖上的草、瓶子、箱子、岩石等物件。
 function drawMapObjects() {
   if (!state.objects) return;
   const sorted = state.objects.filter((object) => object.alive).slice().sort((a, b) => a.y - b.y || a.x - b.x);
@@ -1056,7 +1189,6 @@ function drawMapObjects() {
   }
 }
 
-// 繪製武器揮砍的短暫攻擊動畫。
 function maybeGrantMapItem(object, unit) {
   if (!object || !unit) return false;
   if (Math.random() > mapItemDropChance) return false;
@@ -1108,19 +1240,19 @@ function drawAttacks() {
 
   for (let i = state.attacks.length - 1; i >= 0; i--) {
     const attack = state.attacks[i];
-    const age = (performance.now() - attack.startedAt) / attack.duration; // 0 到 1，代表目前揮砍動畫播放進度。
+    const age = (performance.now() - attack.startedAt) / attack.duration;
     if (age >= 1) {
       state.attacks.splice(i, 1);
       continue;
     }
 
-    const from = cellCenter(attack.from.x, attack.from.y); // 攻擊者所在格中心。
-    const to = cellCenter(attack.to.x, attack.to.y); // 動畫錨點格中心，不等於完整攻擊範圍。
+    const from = cellCenter(attack.from.x, attack.from.y);
+    const to = cellCenter(attack.to.x, attack.to.y);
     const weaponFrameSet = weaponFrames[attack.weaponKey || defaultWeaponKey] || weaponFrames[defaultWeaponKey];
-    const frames = weaponFrameSet.attack[attack.direction] || []; // 依上下左右選擇對應武器組合圖。
-    const handFrames = weaponFrameSet.hand[attack.direction] || []; // 依同一個方向選擇手部出招組合圖。
-    const frameIndex = Math.min(frames.length - 1, Math.floor(age * frames.length)); // 依動畫進度選擇第幾張刀光圖。
-    const handFrameIndex = Math.min(handFrames.length - 1, Math.floor(age * handFrames.length)); // 手部動畫和刀光同步播放。
+    const frames = weaponFrameSet.attack[attack.direction] || [];
+    const handFrames = weaponFrameSet.hand[attack.direction] || [];
+    const frameIndex = Math.min(frames.length - 1, Math.floor(age * frames.length));
+    const handFrameIndex = Math.min(handFrames.length - 1, Math.floor(age * handFrames.length));
     const frame = frames[frameIndex];
     const handFrame = handFrames[handFrameIndex];
 
@@ -1135,7 +1267,6 @@ function drawAttacks() {
   }
 }
 
-// 使用目前武器的方向攻擊組合圖繪製揮砍。
 function drawKunaiAttackFrame(frame, from, to, direction, weaponKey = defaultWeaponKey) {
   const attackScaleByWeapon = {
     weapon1: 1.0,
@@ -1145,43 +1276,43 @@ function drawKunaiAttackFrame(frame, from, to, direction, weaponKey = defaultWea
     weapon19: 1.0,
     weapon20: 1.0,
   };
-  const scale = 1.55 * (attackScaleByWeapon[weaponKey] || 1); // 每把武器可個別調整 attack 大小。
-  const w = frame.width * scale; // 實際繪製寬度。
-  const h = frame.height * scale; // 實際繪製高度。
+  const scale = 1.55 * (attackScaleByWeapon[weaponKey] || 1);
+  const w = frame.width * scale;
+  const h = frame.height * scale;
   if (weaponKey === "weapon19") {
     ctx.drawImage(frame, from.x - w / 2, from.y - h / 2 - 8, w, h);
     return;
   }
-  const dx = Math.sign(to.x - from.x); // 動畫方向 X：右 1、左 -1、上下 0。
-  const dy = Math.sign(to.y - from.y); // 動畫方向 Y：下 1、上 -1、左右 0。
+  const dx = Math.sign(to.x - from.x);
+  const dy = Math.sign(to.y - from.y);
   const anchor = {
-    x: from.x + dx * 34, // 從角色中心往攻擊方向推一點，作為武器動畫基準點。
-    y: from.y + dy * 31, // 角色圖的視覺中心比格子中心高，所以先往上修。
+    x: from.x + dx * 34,
+    y: from.y + dy * 31,
   };
   const offsetsByWeapon = {
     weapon1: {
-      right: { x: -40, y: h / 2 }, // 苦無右砍動畫位置；y 正值代表往上。
-      left: { x: -w +40 , y: h / 2 }, // 苦無左砍動畫位置。
-      up: { x: -w / 2, y: h - 20 }, // 苦無上砍動畫位置（已轉成 y 正值往上規則）。
-      down: { x: -w / 2, y: 50 }, // 苦無下砍動畫位置。
+      right: { x: -40, y: h / 2 },
+      left: { x: -w +40 , y: h / 2 },
+      up: { x: -w / 2, y: h - 20 },
+      down: { x: -w / 2, y: 50 },
     },
     weapon3: {
-      right: { x: -w + 75, y: h / 2 - 44 }, // 忍太刀右砍動畫位置；y 正值代表往上。
-      left: { x: -w + 125, y: h / 2 - 44 }, // 忍太刀左砍動畫位置；這組已校準，優先不要動。
-      up: { x: -w / 2, y: h - 120 }, // 忍太刀上砍動畫位置；忍太刀上砍圖很高，所以 Y 需要往下補。
-      down: { x: -w / 2, y: 40 }, // 忍太刀下砍動畫位置；目前這個方向視覺已校準，優先不要動。
+      right: { x: -w + 75, y: h / 2 - 44 },
+      left: { x: -w + 125, y: h / 2 - 44 },
+      up: { x: -w / 2, y: h - 120 },
+      down: { x: -w / 2, y: 40 },
     },
     weapon4: {
-      right: { x: -50, y: h / 2 - 20 }, // 伊賀密刀右砍動畫位置（y 正值往上）。
-      left: { x: -70, y: h / 2 - 20 }, // 伊賀密刀左砍動畫位置（基準值，可再微調）。
-      up: { x: -w / 2, y: h -115 }, // 伊賀密刀上砍動畫位置（基準值，可再微調）。
-      down: { x: -w / 2, y: 52 }, // 伊賀密刀下砍動畫位置（基準值，可再微調）。
+      right: { x: -50, y: h / 2 - 20 },
+      left: { x: -70, y: h / 2 - 20 },
+      up: { x: -w / 2, y: h -115 },
+      down: { x: -w / 2, y: 52 },
     },
     weapon6: {
-      right: { x: -56, y: h / 2 - 16 }, // 鐵扇不知火右砍動畫位置（先依你目前調法推估）。
-      left: { x: -w + 56, y: h / 2 - 16 }, // 鐵扇不知火左砍動畫位置（可再微調）。
-      up: { x: -w / 2, y: h - 70 }, // 鐵扇不知火上砍動畫位置（可再微調）。
-      down: { x: -w / 2, y: 80 }, // 鐵扇不知火下砍動畫位置（可再微調）。
+      right: { x: -56, y: h / 2 - 16 },
+      left: { x: -w + 56, y: h / 2 - 16 },
+      up: { x: -w / 2, y: h - 70 },
+      down: { x: -w / 2, y: 80 },
     },
     weapon19: {
       right: { x: -54, y: h / 2 - 18 },
@@ -1197,12 +1328,11 @@ function drawKunaiAttackFrame(frame, from, to, direction, weaponKey = defaultWea
     },
   };
   const offsets = offsetsByWeapon[weaponKey] || offsetsByWeapon[defaultWeaponKey];
-  const offset = offsets[direction] || { x: -w / 2, y: h / 2 }; // 防呆：方向異常時置中畫。
+  const offset = offsets[direction] || { x: -w / 2, y: h / 2 };
   const at = applyOffset(anchor, offset);
   ctx.drawImage(frame, at.x, at.y, w, h);
 }
 
-// 使用目前武器的手部組合圖繪製出招動畫；這組 offset 獨立於刀光位置，避免動到已校準的武器 offsets。
 function drawKunaiHandAttackFrame(frame, from, to, direction, weaponKey = defaultWeaponKey) {
   const handScaleByWeapon = {
     weapon1: 1.0,
@@ -1212,43 +1342,43 @@ function drawKunaiHandAttackFrame(frame, from, to, direction, weaponKey = defaul
     weapon19: 1.0,
     weapon20: 1.0,
   };
-  const scale = 1.55 * (handScaleByWeapon[weaponKey] || 1); // 每把武器可個別調整 hand 大小。
-  const w = frame.width * scale; // 手部動畫實際繪製寬度。
-  const h = frame.height * scale; // 手部動畫實際繪製高度。
+  const scale = 1.55 * (handScaleByWeapon[weaponKey] || 1);
+  const w = frame.width * scale;
+  const h = frame.height * scale;
   if (weaponKey === "weapon19") {
     ctx.drawImage(frame, from.x - w / 2, from.y - h / 2 - 8, w, h);
     return;
   }
-  const dx = Math.sign(to.x - from.x); // 動畫方向 X：右 1、左 -1、上下 0。
-  const dy = Math.sign(to.y - from.y); // 動畫方向 Y：下 1、上 -1、左右 0。
+  const dx = Math.sign(to.x - from.x);
+  const dy = Math.sign(to.y - from.y);
   const anchor = {
-    x: from.x + dx * 34, // 和刀光使用同一個方向錨點，確保手和刀同步。
+    x: from.x + dx * 34,
     y: from.y + dy * 31,
   };
   const offsetsByWeapon = {
     weapon1: {
-      right: { x: -35, y: 39 }, // 苦無右手出招位置；之後只調 weapon1 這組，不影響忍太刀。
-      left: { x: 35 - w, y: 39 }, // 苦無左手出招位置。
-      up: { x: -w / 2, y: 20 }, // 苦無上手出招位置。
-      down: { x: -w / 2, y: 50 }, // 苦無下手出招位置。
+      right: { x: -35, y: 39 },
+      left: { x: 35 - w, y: 39 },
+      up: { x: -w / 2, y: 20 },
+      down: { x: -w / 2, y: 50 },
     },
     weapon3: {
-      right: { x: -w + 30 , y: h / 2 + 5 }, // 忍太刀右手出招位置；只影響 right_hand，不影響 right_attack。
-      left: { x: -w + 75 , y: h / 2 + 5 }, // 忍太刀左手出招位置；這組已校準，優先不要動。
-      up: { x: -w / 2, y: h - 55 }, // 忍太刀上手出招位置；只影響 up_hand，不影響 up_attack。
-      down: { x: -w / 2, y: 72 }, // 忍太刀下手出招位置；配合目前下砍刀光。
+      right: { x: -w + 30 , y: h / 2 + 5 },
+      left: { x: -w + 75 , y: h / 2 + 5 },
+      up: { x: -w / 2, y: h - 55 },
+      down: { x: -w / 2, y: 72 },
     },
     weapon4: {
-      right: { x: -80, y: 60 }, // 伊賀密刀右手出招位置（基準值，可再微調）。
-      left: { x: -50, y: 60 }, // 伊賀密刀左手出招位置（基準值，可再微調）。
-      up: { x: -w / 2, y: 85 }, // 伊賀密刀上手出招位置（基準值，可再微調）。
-      down: { x: -w / 2 -5, y: 80 }, // 伊賀密刀下手出招位置（基準值，可再微調）。
+      right: { x: -80, y: 60 },
+      left: { x: -50, y: 60 },
+      up: { x: -w / 2, y: 85 },
+      down: { x: -w / 2 -5, y: 80 },
     },
     weapon6: {
-      right: { x: -80, y: 90 }, // 鐵扇不知火右手出招位置（先依你目前調法推估）。
-      left: { x: 80 - w, y: 90 }, // 鐵扇不知火左手出招位置（可再微調）。
-      up: { x: -w / 2 +10,  y: 70 }, // 鐵扇不知火上手出招位置（可再微調）。
-      down: { x: -w / 2, y: 80 }, // 鐵扇不知火下手出招位置（可再微調）。
+      right: { x: -80, y: 90 },
+      left: { x: 80 - w, y: 90 },
+      up: { x: -w / 2 +10,  y: 70 },
+      down: { x: -w / 2, y: 80 },
     },
     weapon19: {
       right: { x: -70, y: 66 },
@@ -1269,7 +1399,6 @@ function drawKunaiHandAttackFrame(frame, from, to, direction, weaponKey = defaul
   ctx.drawImage(frame, at.x, at.y, w, h);
 }
 
-// 繪製錢鏢飛行中的 projectile 視覺。
 function drawProjectiles(now) {
   if (!state.projectiles) return;
   for (let i = state.projectiles.length - 1; i >= 0; i--) {
@@ -1308,7 +1437,6 @@ function drawProjectiles(now) {
   }
 }
 
-// 繪製角色丟出錢鏢時的出手動畫。
 function drawMoneyDartShootAnimations(now) {
   if (!state.moneyDartCasts) return;
   for (let i = state.moneyDartCasts.length - 1; i >= 0; i--) {
@@ -1356,14 +1484,12 @@ function activeMatchEndActor(unit) {
   return (state.result.actors || []).find((actor) => actor.unitId === unit.id) || null;
 }
 
-// 取得角色目前仍在播放的錢鏢出手動畫。
 function activeMoneyDartCast(unit) {
   if (!state.moneyDartCasts) return null;
   const now = performance.now();
   return state.moneyDartCasts.find((cast) => cast.unitId === unit.id && now - cast.startedAt < cast.duration) || null;
 }
 
-// 依方向決定錢鏢出手動畫的位置與尺寸。
 function moneyDartShootPlacement(direction, frame, p) {
   const scale = 1.05;
   const w = frame.width * scale;
@@ -1374,7 +1500,6 @@ function moneyDartShootPlacement(direction, frame, p) {
   return { x: p.x - w / 2, y: p.y - 50, w, h };
 }
 
-// 依攻擊方向繪製武器揮砍弧線。
 function drawSlashArc(from, to, age, side) {
   const centerX = from.x + (to.x - from.x) * 0.62;
   const centerY = from.y + (to.y - from.y) * 0.62 - 16;
@@ -1400,10 +1525,9 @@ function drawSlashArc(from, to, age, side) {
   ctx.restore();
 }
 
-// 繪製角色頭上的血條。
 function drawHp(unit, x, y) {
   const hpMax = unit.maxHp || maxHp;
-  const hpText = `${Math.max(0, Math.round(unit.hp))}/${hpMax}`; // 暫時顯示確切血量數字。
+  const hpText = `${Math.max(0, Math.round(unit.hp))}/${hpMax}`;
   ctx.fillStyle = "rgba(0,0,0,.45)";
   ctx.fillRect(x - 25, y, 50, 7);
   ctx.fillStyle = unit.team === "blue" ? "#69d8ff" : "#c6cbc4";
@@ -1420,7 +1544,6 @@ function drawHp(unit, x, y) {
   ctx.restore();
 }
 
-// 疊加角色眼睛。左右只顯示單眼；上下顯示雙眼。
 function drawUnitEyes(unit, p, bob = 0) {
   const facing = unit.facing || "down";
   const offset = Object.prototype.hasOwnProperty.call(eyeOffsets, facing) ? eyeOffsets[facing] : eyeOffsets.down;
@@ -1431,12 +1554,10 @@ function drawUnitEyes(unit, p, bob = 0) {
     if (!sideEye) return;
     ctx.save();
     if (facing === "left") {
-      // 左向改用鏡像（依目前素材方向做對調）。
       ctx.translate(p.x + offset.x + offset.w, p.y + offset.y + bob);
       ctx.scale(-1, 1);
       ctx.drawImage(sideEye, 0, 0, offset.w, offset.h);
     } else {
-      // 右向改用原圖（依目前素材方向做對調）。
       ctx.drawImage(sideEye, p.x + offset.x, p.y + offset.y + bob, offset.w, offset.h);
     }
     ctx.restore();
@@ -1448,7 +1569,6 @@ function drawUnitEyes(unit, p, bob = 0) {
   ctx.drawImage(frontEyes, p.x + offset.x, p.y + offset.y + bob, offset.w, offset.h);
 }
 
-// 繪製玩家拖曳移動時的目標線與落點提示。
 function drawDrag() {
   if (!state.charging || !state.dragMoved || !state.pressedUnit) return;
   if (!canUnitMoveNow(state.pressedUnit)) return;
@@ -1466,7 +1586,6 @@ function drawDrag() {
   drawDragArrow(from, to, direction, enough);
 }
 
-// 用 ninja_arrow_0~3 的組合圖繪製拖曳移動方向。
 function drawDragArrow(from, to, direction, enough) {
   const directionName = typeof direction === "string" ? direction : direction?.name;
   const frame = dragArrowFrames[directionName]?.[0];
@@ -1492,7 +1611,6 @@ function drawDragArrow(from, to, direction, enough) {
   ctx.restore();
 }
 
-// 繪製忍術效果，例如鋼鐵藍光與施放動畫。
 function drawNinjuEffects(now) {
   for (const unit of state.units) {
     if (!unit.alive) continue;
@@ -1502,9 +1620,10 @@ function drawNinjuEffects(now) {
       const frames = statusNinjuCastFrames(unit.ninju.type);
       const frame = frames[Math.floor(progress * frames.length)];
       if (frame) {
+        const size = specialNinjuConfigs[unit.ninju.type]?.castSize || 92;
         ctx.save();
         ctx.globalAlpha = 0.85;
-        ctx.drawImage(frame, p.x - 46, p.y - 68, 92, 92);
+        ctx.drawImage(frame, p.x - size / 2, p.y - 22 - size / 2, size, size);
         ctx.restore();
       }
     }
@@ -1513,6 +1632,7 @@ function drawNinjuEffects(now) {
 }
 
 function statusNinjuCastFrames(type) {
+  if (specialNinjuConfigs[type]) return specialNinjuFrames[type] || defUpFrames;
   if (type === "hotBlood") return atkUpFrames;
   if (type === "genki") return regenHpSmallFrames;
   if (type === "kakki" || type === "shinki") return regenHpLargeFrames;
@@ -1521,6 +1641,8 @@ function statusNinjuCastFrames(type) {
 }
 
 function ninjuDamageFrames(type) {
+  if (specialNinjuConfigs[type]) return specialNinjuFrames[type] || [];
+  if (typeof type === "string" && type.endsWith("Hit")) return specialNinjuHitFrames[type.slice(0, -3)] || [];
   if (type === "flash") return smallThunderDamagedFrames;
   if (type === "wildfire") return smallFireDamagedFrames;
   if (type === "freeze") return smallIceDamagedFrames;
@@ -1533,6 +1655,7 @@ function ninjuDamageFrames(type) {
 }
 
 function ninjuDamageFrameBox(type) {
+  if (specialNinjuConfigs[type] || (typeof type === "string" && type.endsWith("Hit"))) return { x: 0, y: 38, w: 150, h: 150 };
   if (type === "flashMiss") return { x: 0, y: 76, w: 87, h: 57 };
   if (type === "flashHitHead") return { x: 0, y: 78, w: 87, h: 57 };
   if (type === "wildfireMiddleHitHead") return { x: 0, y: 78, w: 87, h: 57 };
@@ -1563,7 +1686,11 @@ function drawNinjuDamageEffects(now) {
     const frame = frames[frameIndex];
     if (!frame) continue;
     const p = target && (target.alive || target.respawning) ? unitPosition(target) : effect.at;
-    const box = ninjuDamageFrameBox(effect.type);
+    const box = { ...ninjuDamageFrameBox(effect.type) };
+    if (effect.options?.targetSize) {
+      box.w = effect.options.targetSize;
+      box.h = effect.options.targetSize;
+    }
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.drawImage(frame, p.x + box.x - box.w / 2, p.y - box.y - box.h / 2, box.w, box.h);
@@ -1586,7 +1713,6 @@ function addNinjuDamageEffect(type, target, startedAt, duration, options = {}) {
 }
 
 // ===== Rendering: Overlays / Result =====
-// 繪製開局三、二、一、開始的倒數畫面。
 function drawCountdownOverlay(now) {
   if (state.result || state.matchStart || !state.countdownStart) return;
   const elapsed = now - state.countdownStart;
@@ -1604,7 +1730,6 @@ function drawCountdownOverlay(now) {
   ctx.restore();
 }
 
-// 依倒數經過時間回傳目前要顯示的文字與顏色。
 function countdownStep(elapsed) {
   if (elapsed < 500) return { text: "3", color: "#fff1a8" };
   if (elapsed < 1000) return { text: "2", color: "#fff1a8" };
@@ -1613,7 +1738,6 @@ function countdownStep(elapsed) {
   return null;
 }
 
-// 繪製勝敗結算畫面與統計表。
 function drawResultOverlay() {
   if (!state.result) return;
   const now = performance.now();
@@ -1651,7 +1775,6 @@ function drawResultOverlay() {
   ctx.restore();
 }
 
-// 繪製結算畫面的一列表格資料。
 function drawResultRow(values, y, header = false, team = "") {
   const x = 186;
   const widths = [150, 100, 80, 140, 140];
@@ -1669,7 +1792,6 @@ function drawResultRow(values, y, header = false, team = "") {
 }
 
 // ===== Rendering: HUD =====
-// 繪製遊戲中的上方與下方 HUD。
 function drawGameHud() {
   drawSoulHud();
   drawTopHud();
@@ -1723,58 +1845,56 @@ function syncOugiFromSpecialGauge(unit) {
   unit.ougi = specialGaugePercent(unit);
 }
 
-// 繪製上方玩家名稱、段數與段位文字。
 function drawTopHud() {
   ctx.save();
   ctx.textBaseline = "middle";
+  const unit = state.units.find((u) => u.id === playerUnitId) || selectedHudUnit();
+  if (unit && progressionUiVisible) refreshUnitProgression(unit);
   drawIconImage(images.blueIcon, 38, 18, 42, 31);
-  drawOutlinedText("Player", 118, 18, 17, "#f4f3dd", "left"); // 上方玩家名稱位置/大小/顏色
-  drawOutlinedText("Lv. 99", 294, 18, 18, "#f4f3dd", "center"); // 上方段數位置/大小/顏色
-  drawOutlinedText("Night Rogue", 372, 18, 18, "#f4f3dd", "center"); // 上方段位位置/大小/顏色
-  const unit = state.units.find((u) => u.id === playerUnitId);
+  drawOutlinedText(unit?.name || "Player", 118, 18, 17, "#f4f3dd", "left");
+  drawOutlinedText(progressionUiVisible ? `Lv. ${unit?.level || defaultPlayerLevel}` : "Lv. 99", 294, 18, 18, "#f4f3dd", "center");
+  drawOutlinedText(progressionUiVisible ? (unit?.rankTitle || rankForLevel(defaultPlayerLevel)) : "Night Rogue", 372, 18, 18, "#f4f3dd", "center");
   if (unit) {
     const coord = displayCellCoord(unit);
-    drawOutlinedText(`Cell [${coord.x},${coord.y}]`, grid.left + grid.cols * grid.cell - 10, 18, 13, "#d9f4ff", "right"); // 右上角目前角色座標位置/大小/顏色
+    drawOutlinedText(`Cell [${coord.x},${coord.y}]`, grid.left + grid.cols * grid.cell - 10, 18, 13, "#d9f4ff", "right");
   }
   ctx.restore();
 }
 
-// 繪製左下角體、技、武器、德、金區塊。
 function drawBottomPlayerHud() {
   const unit = selectedHudUnit();
   const hpRatio = unit ? Math.max(0, unit.hp / (unit.maxHp || maxHp)) : 0;
   const skillRatio = unit ? Math.max(0, unit.skill / maxSkill) : 0;
 
   ctx.save();
-  drawHudBar(45, 574, 165, 30, hpRatio, "#a057be", "HP"); // 體條位置/大小/填滿顏色
+  drawHudBar(45, 574, 165, 30, hpRatio, "#a057be", "HP");
   drawHudBar(262, 574, 165, 30, skillRatio, "#38c2f2", "SP");
-  drawOutlinedText("WPN", 35, 654, 13, "#f0f0df", "center"); // 武字位置/大小/顏色 X:35(間隔15)
-  drawMoneyBox(50, 642, "", 95); // 武器名稱框位置/寬度 X:50+100=150
-  drawOutlinedText("REP", 175, 654, 13, "#f0f0df", "center"); // 德字位置/大小/顏色 X:180(30)
-  drawMoneyBox(190, 642, "0", 95); // 德數值框位置/寬度 195(15)
-  drawOutlinedText("GOLD", 315, 654, 12, "#f0f0df", "center"); // 金字位置/大小/顏色
-  drawMoneyBox(330, 642, String(Math.floor(unit?.gold || 0)), 95); // 金數值框位置/寬度
+  drawOutlinedText("WPN", 35, 654, 13, "#f0f0df", "center");
+  drawMoneyBox(50, 642, "", 95);
+  drawOutlinedText("REP", 175, 654, 13, "#f0f0df", "center");
+  drawMoneyBox(190, 642, "0", 95);
+  drawOutlinedText("GOLD", 315, 654, 12, "#f0f0df", "center");
+  drawMoneyBox(330, 642, String(Math.floor(unit?.gold || 0)), 95);
   ctx.restore();
 }
 
-// 繪製體力或技力條。
 function drawHudBar(x, y, w, h, ratio, color, label) {
   ctx.save();
-  ctx.fillStyle = "#26302c"; // 體/技條外框底色
-  ctx.strokeStyle = "#d4a85e"; // 體/技條外框線顏色
-  ctx.lineWidth = 2; // 體/技條外框線粗細
-  ctx.fillRect(x, y, w, h); // 體/技條外框位置/大小
-  ctx.strokeRect(x, y, w, h); // 體/技條外框線位置/大小
-  ctx.fillStyle = "#080808"; // 體/技條內部未填滿底色
-  ctx.fillRect(x + 6, y + 6, w - 12, h - 12); // 體/技條內部底色位置/大小
-  ctx.fillStyle = color; // 體/技條目前值填滿顏色
-  ctx.fillRect(x + 6, y + 6, (w - 12) * ratio, h - 12); // 體/技條目前值位置/大小
-  ctx.fillStyle = "#4a4a3d"; // 體/技圓標底色
+  ctx.fillStyle = "#26302c";
+  ctx.strokeStyle = "#d4a85e";
+  ctx.lineWidth = 2;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x, y, w, h);
+  ctx.fillStyle = "#080808";
+  ctx.fillRect(x + 6, y + 6, w - 12, h - 12);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 6, y + 6, (w - 12) * ratio, h - 12);
+  ctx.fillStyle = "#4a4a3d";
   ctx.beginPath();
-  ctx.arc(x - 10, y + h / 2, 20, 0, Math.PI * 2); // 體/技圓標位置/半徑
+  ctx.arc(x - 10, y + h / 2, 20, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  drawOutlinedText(label, x - 10, y + h / 2 + 1, 19, "#e9f3dc", "center"); // 體/技字位置/大小/顏色
+  drawOutlinedText(label, x - 10, y + h / 2 + 1, 19, "#e9f3dc", "center");
   ctx.restore();
 }
 
@@ -1793,8 +1913,7 @@ function drawMatchEndUnitFrame(actor, p, now) {
   const startedAt = state.result?.promptStartedAt || state.matchEnd || now;
   const elapsed = Math.max(0, now - startedAt);
   const frames = (matchEndFrames[actor.team]?.[actor.outcome] || []).filter(Boolean);
-  const progress = Math.min(1, elapsed / matchEndPromptMs);
-  const frame = frames.length > 0 ? frames[Math.floor(elapsed / 75) % frames.length] : null;
+  const frame = frames.length > 0 ? frames[Math.floor(elapsed / matchEndFrameMs) % frames.length] : null;
   const offset = 0;
   ctx.save();
   if (frame) {
@@ -1806,8 +1925,8 @@ function drawMatchEndUnitFrame(actor, p, now) {
     const y = p.y - 47 + (targetBox - h) / 2 + offset;
     ctx.drawImage(frame, x, y, w, h);
   } else {
-    ctx.translate(p.x, p.y - 16 + offset);
-    drawOutlinedText(actor.outcome === "win" ? "WIN" : "LOSS", 0, 0, 36, actor.team === "blue" ? "#78ddff" : "#deded2", "center");
+    const fallback = actor.team === "blue" ? images.blueDown : images.greyDown;
+    if (fallback) ctx.drawImage(fallback, p.x - 31, p.y - 47 + offset, 62, 62);
   }
   ctx.restore();
 }
@@ -1851,61 +1970,58 @@ function drawOugiHudBar(x, y, w, h, ratio) {
   ctx.restore();
 }
 
-// 繪製武器名稱、德、金等數值框。
 function drawMoneyBox(x, y, text, w = 180) {
   ctx.save();
   if (images.moneyPanel) {
-    ctx.drawImage(images.moneyPanel, x, y - 4, w, 30); // 武器/德/金框圖片位置/大小
+    ctx.drawImage(images.moneyPanel, x, y - 4, w, 30);
   } else {
-    ctx.fillStyle = "#2a9cca"; // 武器/德/金框底色
-    ctx.fillRect(x, y - 4, w, 30); // 武器/德/金框位置/大小
+    ctx.fillStyle = "#2a9cca";
+    ctx.fillRect(x, y - 4, w, 30);
   }
-  ctx.strokeStyle = "#041316"; // 武器/德/金框線顏色
-  ctx.lineWidth = 3; // 武器/德/金框線粗細
-  ctx.strokeRect(x, y - 4, w, 30); // 武器/德/金框線位置/大小
-  ctx.fillStyle = "#38c2f2"; // 武器/德/金數值文字顏色
-  ctx.font = "700 18px Microsoft JhengHei, sans-serif"; // 武器/德/金數值文字大小/粗細
+  ctx.strokeStyle = "#041316";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x, y - 4, w, 30);
+  ctx.fillStyle = "#38c2f2";
+  ctx.font = "700 18px Microsoft JhengHei, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text, x + w / 2, y + 11); // 武器/德/金數值文字位置
+  ctx.fillText(text, x + w / 2, y + 11);
   ctx.restore();
 }
 
-// 繪製右下道具列、忍術列與存活人數。
 function drawInventoryHud() {
-  const itemY = itemSlotY; // 道具列 Y 位置
-  const ninjuY = 600; // 忍術列 Y 位置
-  const startX = itemSlotStartX; // 道具格起始 X 位置
-  const slotW = itemSlotW; // 道具格寬度
-  const gap = itemSlotGap; // 道具格間距
+  const itemY = itemSlotY;
+  const ninjuY = 600;
+  const startX = itemSlotStartX;
+  const slotW = itemSlotW;
+  const gap = itemSlotGap;
 
   ctx.save();
-  drawOutlinedText("ITEM", 482, itemY + 14, 12, "#f0f0df", "center"); // 道字位置/大小/顏色
-  drawOutlinedText("SKILL", 482, ninjuY + 15, 12, "#f0f0df", "center"); // 術字位置/大小/顏色
+  drawOutlinedText("ITEM", 482, itemY + 14, 12, "#f0f0df", "center");
+  drawOutlinedText("SKILL", 482, ninjuY + 15, 12, "#f0f0df", "center");
 
   for (let i = 0; i < 10; i++) {
-    const x = startX + i * (slotW + gap); // 第 i 個道具格 X 位置
+    const x = startX + i * (slotW + gap);
     const itemType = selectedHudUnit()?.itemSlots?.[i] || "";
-    drawItemSlot(x, itemY, slotW, 34, Boolean(itemType)); // 道具格位置/大小
+    drawItemSlot(x, itemY, slotW, 34, Boolean(itemType));
     drawInventoryItemHud(itemType, x, itemY, selectedHudUnit()?.items?.[itemType] || 0);
   }
 
   const ninjuLabels = ["", "", "", "", "", ""];
   for (let i = 0; i < ninjuLabels.length; i++) {
-    const x = 510 + i * 75; // 第 i 個忍術格 X 位置/間距
-    drawNinjuSlot(x, ninjuY, 60, 30, ninjuLabels[i], false); // 忍術空框位置/大小，先畫在按鈕後面
+    const x = 510 + i * 75;
+    drawNinjuSlot(x, ninjuY, 60, 30, ninjuLabels[i], false);
   }
 
   for (const button of currentNinjuButtonList()) {
     drawNinjuSlot(button.x, button.y, button.w, button.h, button.label, button.type);
   }
 
-  drawSmallCounter(476, 644, "#2479a9", String(teamAliveCount("blue"))); // blue 存活數位置/顏色
-  drawSmallCounter(476, 670, "#d8d8d8", String(teamAliveCount("grey"))); // grey 存活數位置/顏色
+  drawSmallCounter(476, 644, "#2479a9", String(teamAliveCount("blue")));
+  drawSmallCounter(476, 670, "#d8d8d8", String(teamAliveCount("grey")));
   ctx.restore();
 }
 
-// 繪製單一空道具格。
 function itemSlotRect(index) {
   return {
     x: itemSlotStartX + index * (itemSlotW + itemSlotGap),
@@ -1927,7 +2043,6 @@ function drawItemSlot(x, y, w, h, filled) {
   ctx.restore();
 }
 
-// 繪製單一忍術按鈕或空忍術框。
 function drawInventoryItemHud(type, x, y, count) {
   if (!type || !count) return;
   const img = itemIconByType(type);
@@ -1991,6 +2106,7 @@ function useNinjuByType(type) {
   else if (type === "genki") useGenkiNinju();
   else if (type === "kakki") useKakkiNinju();
   else if (type === "shinki") useShinkiNinju();
+  else if (specialNinjuConfigs[type]) useSpecialNinju(type);
   else if (attackNinjuConfigs[type]) useAttackNinju(type);
 }
 
@@ -1999,10 +2115,11 @@ function drawNinjuSlot(x, y, w, h, text, type) {
   const isSteel = type === true || type === "steel";
   const isHotBlood = type === "hotBlood";
   const isAttackNinju = Boolean(attackNinjuConfigs[type]);
+  const isSpecialNinju = Boolean(specialNinjuConfigs[type]);
   const isMoneyDart = type === "moneyDart";
   const isFireToad = type === "fireToad";
   const isHeal = type === "genki" || type === "kakki" || type === "shinki";
-  const isStatusButton = isSteel || isHotBlood || isHeal || isAttackNinju || isFireToad;
+  const isStatusButton = isSteel || isHotBlood || isHeal || isAttackNinju || isSpecialNinju || isFireToad;
   const statusRule = statusButtonRule(type);
   const active = unit && (isStatusButton
     ? ((unit.ninju?.type === type && (isUnitCastingNinju(unit) || isUnitInNinjuGap(unit))) || (isSteel ? isSteelDefenseActive(unit) : isHotBlood ? isHotBloodActive(unit) : isFireToad ? (isFireToadCasting(unit) || isFireToadTransforming(unit) || isFireToadActive(unit)) : false))
@@ -2011,7 +2128,7 @@ function drawNinjuSlot(x, y, w, h, text, type) {
   const hasRequiredSkill = !isStatusButton || isAttackNinju || unit.skill >= statusRule.cost;
   const ready = unit && unit.alive && !isUnitDisabled(unit) && (isStatusButton ? statusRule.available !== false && hasRequiredSkill && hasAttackSoul : isMoneyDart);
   ctx.save();
-  if (isAttackNinju && images.flashButton) {
+  if ((isAttackNinju || isSpecialNinju) && images.flashButton) {
     ctx.globalAlpha = ready ? 1 : 0.55;
     ctx.drawImage(images.flashButton, x, y, w, h);
     ctx.globalAlpha = 1;
@@ -2025,12 +2142,12 @@ function drawNinjuSlot(x, y, w, h, text, type) {
     ctx.globalAlpha = ready ? 1 : 0.55;
     ctx.drawImage(images.steelButton, x, y, w, h);
     ctx.globalAlpha = 1;
-    drawNinjuButtonText(text, x + w / 2 - 1, y + h / 2 + 1, 16, "#232323f8", "center"); // 鋼鐵/熱血字：跟錢鏢同字型、大小、顏色。
+    drawNinjuButtonText(text, x + w / 2 - 1, y + h / 2 + 1, 16, "#232323f8", "center");
   } else if (isMoneyDart && images.moneyDartButton) {
     ctx.globalAlpha = ready ? 1 : 0.55;
     ctx.drawImage(images.moneyDartButton, x, y, w, h);
     ctx.globalAlpha = 1;
-    drawNinjuButtonText(text, x + w / 2 -1, y + h / 2 + 1, 16, "#232323f8", "center"); // 錢鏢字：x/y offset、字大小、字色。
+    drawNinjuButtonText(text, x + w / 2 -1, y + h / 2 + 1, 16, "#232323f8", "center");
   } else {
     ctx.fillStyle = ready ? "#c78e42" : "#2d3d38";
     ctx.fillRect(x, y, w, h);
@@ -2049,7 +2166,6 @@ function drawNinjuSlot(x, y, w, h, text, type) {
   ctx.restore();
 }
 
-// 繪製 blue/grey 存活人數的小圓點計數。
 function currentNinjuButtonRects() {
   return {
     moneyDart: moneyDartButtonRect,
@@ -2079,6 +2195,7 @@ function currentNinjuButtonList() {
 
 function statusButtonRule(type) {
   if (type === "fireToad") return fireToadRule();
+  if (specialNinjuConfigs[type]) return { cost: specialNinjuConfigs[type].cost || flashNinjuCost, available: true };
   if (attackNinjuConfigs[type]) return attackNinjuRule(type);
   if (type === "hotBlood") return hotBloodRule();
   if (type === "genki" || type === "kakki" || type === "shinki") return healNinjuRule(type);
@@ -2101,20 +2218,18 @@ function drawSmallCounter(x, y, color, text) {
 
 function drawNinjuButtonText(text, x, y, size, color, align = "center") {
   ctx.save();
-  ctx.font = `700 ${size}px DFKai-SB, KaiTi, Microsoft JhengHei, serif`; // 忍術按鈕字型與字重，size 控字大小。
+  ctx.font = `700 ${size}px DFKai-SB, KaiTi, Microsoft JhengHei, serif`;
   ctx.textAlign = align;
   ctx.textBaseline = "middle";
-  ctx.fillStyle = color; // 忍術按鈕文字顏色。
+  ctx.fillStyle = color;
   ctx.fillText(text, x, y);
   ctx.restore();
 }
 
-// 計算指定隊伍目前還存活或等待重生的人數。
 function teamAliveCount(team) {
   return state.units.filter((unit) => unit.team === team && (unit.alive || unit.respawning)).length;
 }
 
-// 有圖片就畫圖片，沒有圖片時用灰色方塊替代。
 function drawIconImage(img, x, y, w, h) {
   if (img) {
     ctx.drawImage(img, x, y, w, h);
@@ -2124,7 +2239,6 @@ function drawIconImage(img, x, y, w, h) {
   ctx.fillRect(x, y, w, h);
 }
 
-// 繪製帶黑邊的文字，提高 HUD 可讀性。
 function drawOutlinedText(text, x, y, size, color, align = "left") {
   ctx.save();
   ctx.font = `700 ${size}px Microsoft JhengHei, sans-serif`;
@@ -2138,7 +2252,6 @@ function drawOutlinedText(text, x, y, size, color, align = "left") {
   ctx.restore();
 }
 
-// 繪製目前忍術狀態提示條。
 function drawNinjuBar() {
   const unit = selectedHudUnit();
   if (!unit) return;
@@ -2157,7 +2270,6 @@ function drawNinjuBar() {
   ctx.restore();
 }
 
-// 依角色移動進度計算畫面上的平滑位置。
 function unitPosition(unit) {
   const target = cellCenter(unit.x, unit.y);
   if (unit.moveT >= 1) return target;
@@ -2168,7 +2280,6 @@ function unitPosition(unit) {
 }
 
 // ===== Input =====
-// 處理滑鼠按下：忍術按鈕、選角色、攻擊或開始拖曳。
 function pointerDown(event) {
   if (state.inRoom) return;
   if (state.result) {
@@ -2238,7 +2349,6 @@ function pointerDown(event) {
   setMessage("Move only works by holding a character, charging, then dragging to a cell.");
 }
 
-// 處理滑鼠移動並更新目前指向的格子。
 function pointerMove(event) {
   const rect = canvas.getBoundingClientRect();
   state.pointer.x = (event.clientX - rect.left) * canvas.width / rect.width;
@@ -2259,7 +2369,6 @@ function pointerMove(event) {
   }
 }
 
-// 處理滑鼠放開，決定是否執行拖曳移動。
 function pointerUp(event) {
   startBgm();
   eventCell(event);
@@ -2471,12 +2580,17 @@ function drawOugiAnimations(now) {
     if (!unit) continue;
     const p = unitPosition(unit);
     ctx.save();
-    ctx.globalAlpha = progress < 0.9 ? 0.96 : Math.max(0, (1 - progress) / 0.1);
-    drawOugiLayerFrame(effectFrames, progress, p, definition);
-    drawOugiLayerFrame(bodyFrames, progress, p, definition);
-    drawOugiUnitEyes(unit, cast.direction, p);
-    drawOugiLayerFrame(fxFrames, progress, p, definition);
-    ctx.restore();
+    try {
+      ctx.globalAlpha = progress < 0.9 ? 0.96 : Math.max(0, (1 - progress) / 0.1);
+      drawOugiLayerFrame(effectFrames, progress, p, definition, cast);
+      drawOugiLayerFrame(bodyFrames, progress, p, definition, cast, "body", unit);
+      drawOugiUnitEyes(unit, cast.direction, p);
+      drawOugiLayerFrame(fxFrames, progress, p, definition, cast);
+    } catch (error) {
+      drawOugiFallbackPulse(p, progress, definition);
+    } finally {
+      ctx.restore();
+    }
   }
 }
 
@@ -2485,14 +2599,108 @@ function drawOugiUnitEyes(unit, direction, p) {
   drawUnitEyes({ ...unit, facing: direction || unit.facing || "down" }, p, 0);
 }
 
-function drawOugiLayerFrame(frames, progress, p, definition) {
+function drawOugiLayerFrame(frames, progress, p, definition, cast = null, layer = "effect", unit = null) {
   if (!frames || frames.length === 0) return;
-  const frame = frames[Math.min(frames.length - 1, Math.floor(progress * frames.length))];
+  let frame = frames[Math.min(frames.length - 1, Math.floor(progress * frames.length))];
   if (!frame) return;
+  if (layer === "body") frame = teamOugiBodyFrame(frame, unit?.team);
   const scale = Math.min(1, definition.maxSize / Math.max(frame.width, frame.height));
+  if (cast?.weaponKey === "weapon20" || (cast?.weaponKey === "weapon19" && Number(cast.slot) === 3)) {
+    drawCenteredOugiFrame(frame, p, scale, centeredOugiOffset(cast.direction));
+    return;
+  }
   const w = frame.width * scale;
   const h = frame.height * scale;
   ctx.drawImage(frame, p.x - w / 2, p.y - h / 2 - 18, w, h);
+}
+
+function teamOugiBodyFrame(frame, team) {
+  if (team !== "blue" || !frame?.width || !frame?.height) return frame;
+  if (ougiBodyTeamFrameCache.has(frame)) return ougiBodyTeamFrameCache.get(frame);
+  const canvasEl = document.createElement("canvas");
+  canvasEl.width = frame.width;
+  canvasEl.height = frame.height;
+  const context = canvasEl.getContext("2d");
+  context.drawImage(frame, 0, 0);
+  context.globalCompositeOperation = "source-atop";
+  context.globalAlpha = 0.48;
+  context.fillStyle = "#35b8f0";
+  context.fillRect(0, 0, canvasEl.width, canvasEl.height);
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = "source-over";
+  ougiBodyTeamFrameCache.set(frame, canvasEl);
+  return canvasEl;
+}
+
+function drawCenteredOugiFrame(frame, p, scale, offset = { x: 0, y: -18 }) {
+  const w = frame.width * scale;
+  const h = frame.height * scale;
+  const bounds = safeVisibleImageBounds(frame, ougiFrameBoundsCache);
+  if (!bounds) {
+    ctx.drawImage(frame, p.x - w / 2 + offset.x, p.y - h / 2 + offset.y, w, h);
+    return;
+  }
+  const visibleCenterX = (bounds.x + bounds.w / 2) * scale;
+  const visibleCenterY = (bounds.y + bounds.h / 2) * scale;
+  ctx.drawImage(frame, p.x - visibleCenterX + offset.x, p.y - visibleCenterY + offset.y, w, h);
+}
+
+function safeVisibleImageBounds(image, cache) {
+  try {
+    return visibleImageBounds(image, cache);
+  } catch (error) {
+    cache.set(image, null);
+    return null;
+  }
+}
+
+function visibleImageBounds(image, cache) {
+  if (!image || image.width <= 0 || image.height <= 0) return null;
+  if (cache.has(image)) return cache.get(image);
+  const canvasEl = document.createElement("canvas");
+  canvasEl.width = image.width;
+  canvasEl.height = image.height;
+  const context = canvasEl.getContext("2d", { willReadFrequently: true });
+  context.drawImage(image, 0, 0);
+  const pixels = context.getImageData(0, 0, image.width, image.height).data;
+  let minX = image.width;
+  let minY = image.height;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < image.width; x++) {
+      if (pixels[(y * image.width + x) * 4 + 3] <= 4) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const bounds = maxX >= minX && maxY >= minY ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null;
+  cache.set(image, bounds);
+  return bounds;
+}
+
+function centeredOugiOffset(direction) {
+  const offsets = {
+    up: { x: 0, y: -18 },
+    down: { x: 0, y: -18 },
+    left: { x: 0, y: -18 },
+    right: { x: 0, y: -18 },
+  };
+  return offsets[direction] || { x: 0, y: -18 };
+}
+
+function drawOugiFallbackPulse(p, progress, definition) {
+  const radius = Math.max(28, Math.min(92, (definition?.maxSize || 360) * 0.18));
+  ctx.save();
+  ctx.globalAlpha = 0.75 * (1 - Math.max(0, progress - 0.75) / 0.25);
+  ctx.strokeStyle = "#f5d06e";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y - 18, radius * (0.75 + progress * 0.35), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function handleOugiKeyDown(event) {
@@ -2509,7 +2717,6 @@ function handleOugiKeyUp(event) {
   state.ougiKeyDown = false;
 }
 // ===== UI Text / Audio Helpers =====
-// 更新頁面旁邊或下方的文字狀態資訊。
 function updatePanel() {
   const unit = selectedHudUnit();
   if (!unit) return;
@@ -2524,14 +2731,12 @@ function updatePanel() {
   skillFillEl.style.width = `${Math.min(100, unit.skill / maxSkill * 100)}%`;
 }
 
-// 依隊伍與面向取得角色圖片。
 function unitSprite(unit) {
   const prefix = unit.team === "blue" ? "blue" : "grey";
   const suffix = unit.facing.charAt(0).toUpperCase() + unit.facing.slice(1);
   return images[prefix + suffix];
 }
 
-// 依目標位置更新角色面向。
 function unitUseNinjuSprite(unit) {
   if (!isUnitCastingNinju(unit)) return null;
   if (unit.ninju?.type === "fireToad") return null;
@@ -2551,7 +2756,6 @@ function updateFacing(unit, target) {
   }
 }
 
-// 依滑鼠游標相對角色的位置更新面向。
 function updateFacingFromPointer(unit) {
   const origin = cellCenter(unit.x, unit.y);
   const dx = state.pointer.x - origin.x;
@@ -2564,7 +2768,6 @@ function updateFacingFromPointer(unit) {
   }
 }
 
-// 當目標在上下左右一格時取得方向。
 function directionFromAdjacent(unit, target) {
   const dx = target.x - unit.x;
   const dy = target.y - unit.y;
@@ -2575,7 +2778,6 @@ function directionFromAdjacent(unit, target) {
   return { name: "up", dx: 0, dy: -1 };
 }
 
-// 依遠方目標推算主要方向。
 function directionFromTarget(unit, target) {
   const dx = target.x - unit.x;
   const dy = target.y - unit.y;
@@ -2586,7 +2788,6 @@ function directionFromTarget(unit, target) {
   return dy > 0 ? { name: "down", dx: 0, dy: 1 } : { name: "up", dx: 0, dy: -1 };
 }
 
-// 把方向字串轉成 x/y 向量。
 function directionVector(facing) {
   if (facing === "left") return { dx: -1, dy: 0 };
   if (facing === "right") return { dx: 1, dy: 0 };
@@ -2594,7 +2795,6 @@ function directionVector(facing) {
   return { dx: 0, dy: 1 };
 }
 
-// 依方向取得錢鏢飛行圖片。
 function moneyDartProjectileImage(direction) {
   if (direction === "left") return images.moneyDartLeft;
   if (direction === "right") return images.moneyDartRight;
@@ -2602,32 +2802,29 @@ function moneyDartProjectileImage(direction) {
   return images.moneyDartDown;
 }
 
-// 設定目前狀態訊息。
 function setMessage(text) {
   state.message = text;
   statusEl.textContent = text;
 }
 
-// 依目前所在畫面選擇背景音樂：房間播大廳，戰鬥播地圖，結算停止地圖。
 function activeBgm() {
   if (state.result) return null;
+  if (!state.inRoom && state.gameMode === "yashao") return yashaoBattleBgm;
   return state.inRoom ? roomBgm : battleBgm;
 }
 
-// 停止指定背景音樂，並把播放位置歸零，方便下次重新進入時從頭播。
 function stopBgm(audio) {
   audio.pause();
   audio.currentTime = 0;
 }
 
-// 停掉非目前畫面的 BGM，避免房間與地圖音樂同時播放。
 function syncBgm() {
   const active = activeBgm();
   if (active !== roomBgm && !roomBgm.paused) stopBgm(roomBgm);
   if (active !== battleBgm && !battleBgm.paused) stopBgm(battleBgm);
+  if (active !== yashaoBattleBgm && !yashaoBattleBgm.paused) stopBgm(yashaoBattleBgm);
 }
 
-// 嘗試播放目前畫面的背景音樂。
 function startBgm() {
   syncBgm();
   const bgm = activeBgm();
@@ -2637,12 +2834,12 @@ function startBgm() {
   });
 }
 
-// 套用房間左下角的音量滑桿；音樂控制 BGM，音效控制所有短音效。
 function applyVolumeControls() {
   if (musicVolumeInput) {
     const volume = Number(musicVolumeInput.value) / 100;
     roomBgm.volume = volume;
     battleBgm.volume = volume;
+    yashaoBattleBgm.volume = volume;
   }
   if (sfxVolumeInput) {
     const volume = Number(sfxVolumeInput.value) / 100;
@@ -2652,7 +2849,6 @@ function applyVolumeControls() {
   }
 }
 
-// 播放指定音效，會複製音訊避免連續播放被截斷。
 function playSound(key) {
   const sound = sounds[key];
   if (!sound) return null;
@@ -2680,7 +2876,6 @@ function playSound(key) {
   return instance;
 }
 
-// 依物件種類播放不同破壞音效。
 function playBreakSound(object) {
   if (object.type === "vase") {
     playSound("breakVase");
@@ -2691,7 +2886,6 @@ function playBreakSound(object) {
   }
 }
 
-// 從房間畫面進入正式戰鬥。
 function startBattleFromRoom() {
   state.inRoom = false;
   document.body.classList.remove("room-mode");
@@ -2700,7 +2894,21 @@ function startBattleFromRoom() {
   startBgm();
 }
 
-// 結算畫面點一下回房間，並保留房間原本配置（卡片啟用、武器、控制模式、HP）。
+function toggleGameMode() {
+  state.gameMode = state.gameMode === "yashao" ? "random" : "yashao";
+  updateGameModeUi();
+  renderRoomInventoryPanel();
+  setMessage(state.gameMode === "yashao" ? "Yashao mode selected." : "Random Nindou mode selected.");
+}
+
+function updateGameModeUi() {
+  if (modeTitleEl) modeTitleEl.textContent = state.gameMode === "yashao" ? "Yashao" : "Random Nindou 2 Series";
+  if (modePreviewBtn) {
+    modePreviewBtn.textContent = state.gameMode === "yashao" ? "Y" : "?";
+    modePreviewBtn.classList.toggle("selected", state.gameMode === "yashao");
+  }
+}
+
 function returnToRoomFromResult() {
   if (state.endSoundInstance) {
     state.endSoundInstance.pause();
@@ -2749,6 +2957,7 @@ function openNinjuEditor() {
   if (!ninjuEditorEl) return;
   editNinjuDraft = [...selectedNinjuLoadout];
   editNinjuSlotIndex = 0;
+  renderNinjuEditorProfile();
   renderNinjuEditor();
   ninjuEditorEl.hidden = false;
 }
@@ -2785,8 +2994,17 @@ function resetNinjuEditorLoadout() {
   renderNinjuEditor();
 }
 
+function renderNinjuEditorProfile() {
+  if (!progressionUiVisible) return;
+  const storage = storageForRoomSlotKey(roomStorageKey("blue", 1));
+  const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
+  if (ninjuEditorLevelEl) ninjuEditorLevelEl.textContent = String(progression.level);
+  if (ninjuEditorRoleEl) ninjuEditorRoleEl.textContent = progression.rankTitle;
+}
+
 function renderNinjuEditor() {
   if (!ninjuEditorSlotsEl || !ninjuEditorListEl) return;
+  renderNinjuEditorProfile();
   ninjuEditorSlotsEl.innerHTML = "";
   for (let i = 0; i < 6; i++) {
     const type = editNinjuDraft[i];
@@ -2845,6 +3063,7 @@ if (ninjuEditorSaveBtn) ninjuEditorSaveBtn.addEventListener("click", saveNinjuEd
 if (musicVolumeInput) musicVolumeInput.addEventListener("input", applyVolumeControls);
 if (sfxVolumeInput) sfxVolumeInput.addEventListener("input", applyVolumeControls);
 if (ruleModeToggle) ruleModeToggle.addEventListener("click", toggleRuleMode);
+if (modePreviewBtn) modePreviewBtn.addEventListener("click", toggleGameMode);
 if (roomInventoryBtn) roomInventoryBtn.addEventListener("click", toggleRoomInventoryPanel);
 window.addEventListener("keydown", startBgm, { once: true });
 window.addEventListener("keydown", handleOugiKeyDown);
@@ -2854,17 +3073,10 @@ window.addEventListener("blur", () => {
 });
 
 loadImages().then(() => {
-  updateRuleModeUi();
-  applyVolumeControls();
+updateRuleModeUi();
+updateGameModeUi();
+applyVolumeControls();
   resetGame();
   startBgm();
   draw();
 });
-
-
-
-
-
-
-
-

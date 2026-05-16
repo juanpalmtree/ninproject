@@ -157,8 +157,8 @@
           </section>
 
           <section class="mode-panel" aria-label="Mode">
-            <div class="mode-title">Random Nindou 2 Series</div>
-            <div class="mode-preview">?</div>
+            <div id="modeTitle" class="mode-title">Random Nindou 2 Series</div>
+            <button id="modePreviewBtn" type="button" class="mode-preview" aria-label="Change game mode">?</button>
             <button type="button" class="mode-side side-a">Edit Settings</button>
             <button type="button" class="mode-side side-b">Game Settings</button>
           </section>
@@ -179,7 +179,7 @@
               <img class="ninju-editor-avatar" src="assets/room-ui-selected/b_team.png" alt="">
               <div class="ninju-editor-stats">
                 <div><span>Name</span><strong>Player</strong><button type="button">Change</button></div>
-                <div><span>Level</span><strong>99</strong><span>Role</span><strong>Night Rogue</strong></div>
+                <div><span>Level</span><strong id="ninjuEditorLevel">99</strong><span>Role</span><strong id="ninjuEditorRole">Night Rogue</strong></div>
                 <div><span>Guild</span><strong>Nindou</strong></div>
               </div>
               <div class="ninju-editor-score">
@@ -234,6 +234,7 @@
   </main>
   <script src="scripts/data/config.js"></script>
   <script src="scripts/data/weapons.en.js"></script>
+  <script src="scripts/data/progression.en.js"></script>
   <script src="scripts/data/assets.js"></script>
   <script src="scripts/data/rule-modes.js"></script>
   <script src="scripts/systems/grid.js"></script>

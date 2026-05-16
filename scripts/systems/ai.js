@@ -33,6 +33,17 @@ const aiProfiles = {
     moneyDartReadyChance: 1,
     moneyDartThrowChance: 1,
   },
+  ai_yashao: {
+    reactionMultiplier: 0.45,
+    skillRegenMultiplier: 4,
+    meleeAttackChance: 0.78,
+    chaseChance: 0.98,
+    thinkMinMs: 220,
+    thinkRandMs: 180,
+    steelUseChance: 0,
+    moneyDartReadyChance: 0,
+    moneyDartThrowChance: 0,
+  },
 };
 
 function aiProfile(unit) {
@@ -52,6 +63,11 @@ function updateAi(dt, now) {
 
     const profile = aiProfile(unit);
     unit.skill = Math.min(maxSkill, unit.skill + aiSkillRegenPerSecond * profile.skillRegenMultiplier * dt);
+
+    if (unit.isYashao) {
+      updateYashaoAi(unit, profile, now);
+      continue;
+    }
 
     if (tryAiNinjutsu(unit, profile, now)) {
       unit.aiNextThink = now + profile.thinkMinMs + Math.random() * profile.thinkRandMs;
@@ -131,6 +147,77 @@ function updateAi(dt, now) {
   }
 }
 
+function updateYashaoAi(unit, profile, now) {
+  if (unit.yashaoHiddenUntil && now < unit.yashaoHiddenUntil) return;
+  if (unit.yashaoFrozenUntil && now < unit.yashaoFrozenUntil) {
+    unit.aiNextThink = Math.max(unit.aiNextThink || 0, unit.yashaoFrozenUntil);
+    return;
+  }
+  if (unit.yashaoAction && now - unit.yashaoAction.startedAt < unit.yashaoAction.duration) return;
+  if (unit.moveT < 1 || now < unit.aiNextThink) return;
+  const target = nearestEnemy(unit, "blue");
+  if (!target) {
+    checkVictory();
+    return;
+  }
+
+  const dist = manhattan(unit, target);
+  if (unit.hp < unit.maxHp * 0.55 && (unit.yashaoOugi2At || 0) + 8000 < now) {
+    triggerYashaoOugi(unit, 2, now);
+    unit.yashaoOugi2At = now;
+    unit.aiNextThink = now + 900;
+    return;
+  }
+  if (dist <= 4 && (unit.yashaoOugi1At || 0) + 5200 < now && Math.random() < 0.38) {
+    triggerYashaoOugi(unit, 1, now);
+    unit.yashaoOugi1At = now;
+    unit.aiNextThink = now + 760;
+    return;
+  }
+  if (dist <= 3 && (unit.yashaoOugi3At || 0) + 10000 < now && Math.random() < 0.18) {
+    triggerYashaoOugi(unit, 3, now);
+    unit.yashaoOugi3At = now;
+    unit.aiNextThink = now + 980;
+    return;
+  }
+
+  if (dist === 1 && weaponIsReady(unit)) {
+    updateFacing(unit, target);
+    unit.yashaoAction = { type: "weapon", startedAt: now, duration: 320 };
+    markWeaponUsed(unit);
+    damageUnit(target, 70, `${unit.name} struck ${target.name}`, true, unit);
+    unit.aiNextThink = now + profile.thinkMinMs + Math.random() * profile.thinkRandMs;
+    return;
+  }
+
+  if (isStraightMove(unit, target) && unit.skill >= dist && clearStraightPath(unit, target, target)) {
+    aiMoveUnit(unit, { x: target.x, y: target.y });
+    return;
+  }
+
+  const acted = aiPathMoveToward(unit, target) || aiStepToward(unit, target) || aiRandomMove(unit);
+  if (!acted) aiBreakOut(unit, target);
+  unit.aiNextThink = Math.max(unit.aiNextThink, now + profile.thinkMinMs + Math.random() * profile.thinkRandMs);
+}
+
+function triggerYashaoOugi(unit, slot, now) {
+  unit.yashaoAction = { type: "ougi", slot, startedAt: now, duration: slot === 2 ? 1450 : slot === 3 ? 1700 : 1200 };
+  const targetCount = slot === 1 ? 1 : slot === 2 ? 2 : 3;
+  const damage = slot === 1 ? 65 : slot === 2 ? 85 : 115;
+  const targets = state.units
+    .filter((target) => target.alive && target.team !== unit.team && !isUnitInvincible(target))
+    .sort((a, b) => manhattan(unit, a) - manhattan(unit, b) || a.id - b.id)
+    .slice(0, targetCount);
+  for (const target of targets) {
+    target.disabledUntil = now + 1000;
+    target.invincibleUntil = target.disabledUntil;
+    target.hitFlash = 0.55;
+    damageUnit(target, damage, `${unit.name} hit ${target.name} with Yashao Ougi ${slot}`, true, unit);
+  }
+  playSound(slot === 3 ? "yashaoKilled" : "yashaoRunOver");
+  setMessage(`${unit.name} used Yashao Ougi ${slot}.`);
+}
+
 // 依照距離計算 AI 反應時間，越遠反應越慢。
 function aiReactionDelay(distance, multiplier = 1) {
   return (400 + Math.max(1, distance) * 100 + Math.random() * 180) * multiplier;
@@ -142,6 +229,7 @@ function nearestEnemy(unit, enemyTeam) {
   let bestDist = Infinity;
   for (const other of state.units) {
     if (!other.alive || other.team !== enemyTeam) continue;
+    if (typeof isYashaoHiddenFromMatch === "function" && isYashaoHiddenFromMatch(other)) continue;
     const dist = manhattan(unit, other);
     if (dist < bestDist) {
       best = other;

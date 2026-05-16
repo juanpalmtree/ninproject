@@ -1,6 +1,7 @@
 // Asset paths and frame buffers. Loading still happens in game.js for now.
 const roomBgm = new Audio("assets/audio/lobby.mp3");
 const battleBgm = new Audio("assets/audio/bgm.mp3");
+const yashaoBattleBgm = new Audio("assets/audio/jugodechina.mp4");
 
 const soundSources = {
   move: "assets/sfx/ninja/normalmove.ogg",
@@ -30,6 +31,13 @@ const soundSources = {
   weapon19Ougi1Chid113: "assets/nindou_exports/sounds/113.mp3",
   weapon19Ougi1Chid119: "assets/nindou_exports/sounds/119.mp3",
   weapon19Ougi1Chid975: "assets/nindou_exports/sounds/975.mp3",
+  yashaoRunOver: "assets/yashao/sounds/1_SFX_Bot_RunOver_yashao2.mp3",
+  yashaoKilled: "assets/yashao/sounds/2_SFX_Bot_Killed_yashao2.mp3",
+  sevenNinju: "assets/ninju/special_exports/sounds/919.mp3",
+  angelNinju: "assets/ninju/special_exports/sounds/1052.mp3",
+  deathNinju: "assets/ninju/special_exports/sounds/1102.mp3",
+  butsumetsuNinju: "assets/ninju/special_exports/sounds/1100.mp3",
+  mouryoNinju: "assets/ninju/special_exports/sounds/1002.mp3",
   useNinju: "assets/sfx/ninja/useninju.ogg",
   takeDart: "assets/sfx/ninja/takedart.ogg",
   shootDart: "assets/sfx/ninja/shootdart.ogg",
@@ -59,7 +67,7 @@ const sounds = Object.fromEntries(Object.entries(soundSources).map(([key, src]) 
   audio.volume = 0.1;
   return [key, audio];
 }));
-[roomBgm, battleBgm].forEach((audio) => {
+[roomBgm, battleBgm, yashaoBattleBgm].forEach((audio) => {
   audio.preload = "auto";
   audio.loop = true;
   audio.volume = 0.1;
@@ -195,6 +203,23 @@ const attackNinjuConfigs = {
     ],
   },
 };
+const specialNinjuConfigs = {
+  seven: { label: "Seven", frameDir: "DefineSprite_946_Seven", frameCount: 43, soundKey: "sevenNinju", damage: 130, duration: 1720, castSize: 150, effectSize: 150, hitEffectSize: 130 },
+  angel: { label: "Angel", frameDir: "DefineSprite_1049_Angel", frameCount: 43, soundKey: "angelNinju", damage: 100, heal: 90, duration: 1720, castSize: 150, effectSize: 150, hitEffectSize: 130 },
+  death: { label: "Death", frameDir: "DefineSprite_1070_Death", frameCount: 43, hitFrameDir: "DefineSprite_599_Dmg_Death", hitFrameCount: 45, soundKey: "deathNinju", damage: 170, duration: 1720, castSize: 150, effectSize: 150, hitEffectSize: 130 },
+  butsumetsu: { label: "Butsu", frameDir: "DefineSprite_907_Suicide", frameCount: 46, soundKey: "butsumetsuNinju", damage: 155, duration: 1840, castSize: 150, effectSize: 150, hitEffectSize: 130 },
+  mouryo: { label: "Mouryo", frameDir: "DefineSprite_1067_Mouryou", frameCount: 43, hitFrameDir: "DefineSprite_580_Dmg_Mouryou", hitFrameCount: 45, soundKey: "mouryoNinju", damage: 145, duration: 1720, castSize: 150, effectSize: 150, hitEffectSize: 130 },
+};
+const specialNinjuFrameSources = Object.fromEntries(Object.entries(specialNinjuConfigs).map(([type, config]) => [
+  type,
+  Array.from({ length: config.frameCount }, (_, index) => `assets/ninju/special_exports/sprites/${config.frameDir}/${index + 1}.png`),
+]));
+const specialNinjuHitFrameSources = Object.fromEntries(Object.entries(specialNinjuConfigs).map(([type, config]) => [
+  type,
+  config.hitFrameDir ? Array.from({ length: config.hitFrameCount }, (_, index) => `assets/ninju/special_exports/sprites/${config.hitFrameDir}/${index + 1}.png`) : [],
+]));
+const specialNinjuFrames = Object.fromEntries(Object.keys(specialNinjuConfigs).map((type) => [type, []]));
+const specialNinjuHitFrames = Object.fromEntries(Object.keys(specialNinjuConfigs).map((type) => [type, []]));
 const chargeRedFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect-candidates/matched-charge-ring/final-candidate/inner_fire/${index + 1}.png`);
 const chargeYellowFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect-candidates/matched-charge-ring/final-candidate/inner_fire/${index + 5}.png`);
 const chargeRedFrames = [];
@@ -270,4 +295,54 @@ const fireToadFrames = Object.fromEntries(fireToadTeams.map((team) => [team, Obj
   direction,
   { arrive: [], setoff: [] },
 ]))]));
+const yashaoFrameSources = {
+  idle: {
+    up: ["assets/yashao/sprites/DefineSprite_242_Idle_Up_yashao2/1.png"],
+    right: ["assets/yashao/sprites/DefineSprite_245_Idle_Right_yashao2/1.png"],
+    left: ["assets/yashao/sprites/DefineSprite_248_Idle_Left_yashao2/1.png"],
+    down: ["assets/yashao/sprites/DefineSprite_250_Idle_Down_yashao2/1.png"],
+  },
+  arrive: {
+    up: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_34_Arrive_Up_yashao2/${index + 1}.png`),
+    right: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_62_Arrive_Right_yashao2/${index + 1}.png`),
+    left: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_74_Arrive_Left_yashao2/${index + 1}.png`),
+    down: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_89_Arrive_Down_yashao2/${index + 1}.png`),
+  },
+  weapon: {
+    up: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_315_W_950_Up_yashao2/${index + 1}.png`),
+    right: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_332_W_950_Right_yashao2/${index + 1}.png`),
+    left: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_349_W_950_Left_yashao2/${index + 1}.png`),
+    down: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_361_W_950_Down_yashao2/${index + 1}.png`),
+  },
+  weaponFx: {
+    up: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_310_W_950_Up_FX_yashao2/${index + 1}.png`),
+    right: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_316_W_950_Right_FX_yashao2/${index + 1}.png`),
+    left: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_333_W_950_Left_FX_yashao2/${index + 1}.png`),
+    down: Array.from({ length: 8 }, (_, index) => `assets/yashao/sprites/DefineSprite_350_W_950_Down_FX_yashao2/${index + 1}.png`),
+  },
+  ougi: {
+    1: Array.from({ length: 76 }, (_, index) => `assets/yashao/sprites/DefineSprite_241_Ougi_950_1_X_yashao2/${index + 1}.png`),
+    2: Array.from({ length: 104 }, (_, index) => `assets/yashao/sprites/DefineSprite_224_Ougi_950_2_X_yashao2/${index + 1}.png`),
+    3: Array.from({ length: 97 }, (_, index) => `assets/yashao/sprites/DefineSprite_185_Ougi_950_3_X_yashao2/${index + 1}.png`),
+  },
+  ougiFx: {
+    1: Array.from({ length: 76 }, (_, index) => `assets/yashao/sprites/DefineSprite_238_Ougi_950_1_X_fx/${index + 1}.png`),
+    2: Array.from({ length: 104 }, (_, index) => `assets/yashao/sprites/DefineSprite_221_Ougi_950_2_X_fx/${index + 1}.png`),
+    3: Array.from({ length: 97 }, (_, index) => `assets/yashao/sprites/DefineSprite_154_Ougi_950_3_X_fx/${index + 1}.png`),
+  },
+  enter: Array.from({ length: 17 }, (_, index) => `assets/yashao/sprites/DefineSprite_290_Enter_yashao2/${index + 1}.png`),
+  showFingers: Array.from({ length: 26 }, (_, index) => `assets/yashao/sprites/DefineSprite_269_ShowFingers_yashao2/${index + 1}.png`),
+  faint: ["assets/yashao/sprites/DefineSprite_270_Faint_yashao2/1.png"],
+};
+const yashaoFrames = {
+  idle: { up: [], right: [], left: [], down: [] },
+  arrive: { up: [], right: [], left: [], down: [] },
+  weapon: { up: [], right: [], left: [], down: [] },
+  weaponFx: { up: [], right: [], left: [], down: [] },
+  ougi: { 1: [], 2: [], 3: [] },
+  ougiFx: { 1: [], 2: [], 3: [] },
+  enter: [],
+  showFingers: [],
+  faint: [],
+};
 

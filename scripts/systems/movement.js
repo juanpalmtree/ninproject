@@ -107,7 +107,7 @@ function collideWithEnemy(mover, enemy) {
   enemy.moneyDart = null;
   if (enemyWasFireToad) endFireToad(enemy);
   cancelDragIfPressed(enemy);
-  playSound("runOver");
+  playSound(mover.isYashao ? "yashaoRunOver" : "runOver");
   setMessage(`${mover.name} ran into ${enemy.name}. ${enemy.name} took ${formatDamage(damage)}.`);
 
   if (enemy.hp <= 0) {

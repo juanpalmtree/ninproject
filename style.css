@@ -577,6 +577,13 @@ body:not(.room-mode) .room-screen {
   color: #ffbd2a;
   font-size: 76px;
   font-weight: 900;
+  cursor: pointer;
+}
+
+.mode-preview.selected {
+  color: #ffd96d;
+  font-size: 58px;
+  background: linear-gradient(rgba(9, 25, 34, .86), rgba(9, 25, 34, .86)), url("assets/room-ui-selected/room-map-bg.png") center / cover no-repeat;
 }
 
 .mode-side {
@@ -992,9 +999,19 @@ button:hover {
 .ninju-slot-choice[data-ninju-type="flash"],
 .ninju-slot-choice[data-ninju-type="wildfire"],
 .ninju-slot-choice[data-ninju-type="freeze"],
+.ninju-slot-choice[data-ninju-type="seven"],
+.ninju-slot-choice[data-ninju-type="angel"],
+.ninju-slot-choice[data-ninju-type="death"],
+.ninju-slot-choice[data-ninju-type="butsumetsu"],
+.ninju-slot-choice[data-ninju-type="mouryo"],
 .ninju-option[data-ninju-type="flash"],
 .ninju-option[data-ninju-type="wildfire"],
-.ninju-option[data-ninju-type="freeze"] {
+.ninju-option[data-ninju-type="freeze"],
+.ninju-option[data-ninju-type="seven"],
+.ninju-option[data-ninju-type="angel"],
+.ninju-option[data-ninju-type="death"],
+.ninju-option[data-ninju-type="butsumetsu"],
+.ninju-option[data-ninju-type="mouryo"] {
   background-image: url("assets/ninju/buttons/1.png");
 }
 

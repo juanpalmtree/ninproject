@@ -27,6 +27,12 @@ function updateNinju(now) {
         startFireToadTransform(unit, now);
         continue;
       }
+      if (isSpecialNinjuType(unit.ninju.type)) {
+        triggerSpecialNinju(unit, unit.ninju.type, now);
+        unit.ninju = null;
+        if (unit.id === playerUnitId) setMessage(`${unit.name}: ninjutsu cast finished.`);
+        continue;
+      }
       refreshStatusNinju(unit, unit.ninju.type, now);
       const queuedType = unit.ninju.pendingType || unit.ninju.type;
 
@@ -91,6 +97,40 @@ function useFlashNinju() {
 function useAttackNinju(type) {
   const config = attackNinjuConfigs[type];
   useStatusNinju(type, config?.label || type);
+}
+
+function useSpecialNinju(type) {
+  const unit = selectedUnit();
+  const config = specialNinjuConfigs[type];
+  if (!unit || !canControlUnit(unit) || !config) return;
+  if (isFireToadActive(unit) || isFireToadTransforming(unit) || isFireToadCasting(unit)) {
+    setMessage(`${unit.name}: cannot use ninjutsu as Fire Toad.`);
+    return;
+  }
+  if (unit.moneyDart) {
+    setMessage(`${unit.name}: cannot use ninjutsu while holding money dart.`);
+    return;
+  }
+  if (isUnitDisabled(unit)) {
+    setMessage(`${unit.name}: cannot act now.`);
+    return;
+  }
+  if ((unit.ninjuLockedUntil || 0) > performance.now() || isUnitCastingNinju(unit) || isUnitInNinjuGap(unit)) {
+    setMessage(`${unit.name}: cannot use ninjutsu yet.`);
+    return;
+  }
+  const cost = config.cost || flashNinjuCost;
+  if (unit.skill < cost) {
+    setMessage(`${config.label} needs ${cost} skill.`);
+    return;
+  }
+  unit.skill -= cost;
+  const now = performance.now();
+  unit.ninju = { type, phase: "active", startedAt: now, duration: config.duration || flashCastDuration, queue: 0 };
+  playSound("useNinju");
+  if (config.soundKey) playSound(config.soundKey);
+  clearDragState();
+  setMessage(`${unit.name} used ${config.label}.`);
 }
 
 function useGenkiNinju() {
@@ -457,6 +497,10 @@ function isStatusNinjuType(type) {
   return type === "steel" || type === "hotBlood" || isAttackNinjuType(type) || isHealNinjuType(type);
 }
 
+function isSpecialNinjuType(type) {
+  return Boolean(specialNinjuConfigs[type]);
+}
+
 function isAttackNinjuType(type) {
   return Boolean(attackNinjuConfigs[type]);
 }
@@ -466,7 +510,7 @@ function isHealNinjuType(type) {
 }
 
 function isCastNinjuType(type) {
-  return isStatusNinjuType(type) || type === "fireToad";
+  return isStatusNinjuType(type) || isSpecialNinjuType(type) || type === "fireToad";
 }
 
 function defendedDamage(unit, baseDamage) {
@@ -498,6 +542,28 @@ function playStatusNinjuSound(type) {
     return;
   }
   playStatusEnergyUpSequence();
+}
+
+function triggerSpecialNinju(caster, type, now = performance.now()) {
+  const config = specialNinjuConfigs[type];
+  if (!config) return;
+  if (config.heal) caster.hp = Math.min(caster.maxHp || maxHp, caster.hp + config.heal);
+  const targets = state.units
+    .filter((target) => target.alive && target.team !== caster.team && !isUnitInvincible(target))
+    .sort((a, b) => manhattan(caster, a) - manhattan(caster, b) || a.id - b.id)
+    .slice(0, 1);
+  for (const target of targets) {
+    target.disabledUntil = now + 1200;
+    target.invincibleUntil = target.disabledUntil;
+    target.moneyDart = null;
+    target.hitFlash = 0.65;
+    cancelDragIfPressed(target);
+    if (typeof addNinjuDamageEffect === "function") {
+      addNinjuDamageEffect(type, target, now, config.duration || 1400, { targetSize: config.effectSize || 150 });
+      if (specialNinjuHitFrames[type]?.some(Boolean)) addNinjuDamageEffect(`${type}Hit`, target, now + 500, 1400, { targetSize: config.hitEffectSize || 130 });
+    }
+    damageUnit(target, config.damage || flashDamage, `${caster.name} hit ${target.name} with ${config.label}`, true, caster);
+  }
 }
 
 function triggerAttackNinju(caster, type, attackNinjuLevel, now = performance.now()) {
