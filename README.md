@@ -1,4 +1,4 @@
-# Nindou 2 Offline Prototype
+# Nindou 3 Offline Prototype
 
 This repository is an English offline remake/prototype inspired by Nindou 3. It is built with plain HTML, CSS, and JavaScript using an HTML Canvas battle screen.
 
