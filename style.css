@@ -315,6 +315,7 @@ body:not(.room-mode) .room-screen {
   font-size: 15px;
   font-weight: 900;
   line-height: 1.35;
+  display: none;
 }
 
 .room-owner {
@@ -889,59 +890,67 @@ button:hover {
 
 .ninju-editor-series {
   position: absolute;
-  left: 138px;
-  top: 138px;
+  left: 130px;
+  top: 126px;
   display: grid;
-  gap: 45px;
+  gap: 20px;
   z-index: 5;
-  font-size: 16px;
+  width: 76px;
+  font-size: 13px;
   line-height: 1;
+  text-align: right;
   pointer-events: none;
   text-shadow: 1px 1px 0 rgba(0, 0, 0, .65);
 }
 
 .ninju-editor-series .heal { color: #f02bd7; }
-.ninju-editor-series .support { color: #6a6df2; }
 .ninju-editor-series .attack { color: #ef5034; }
+.ninju-editor-series .support { color: #6a6df2; }
 .ninju-editor-series .special { color: #8fba72; }
 .ninju-editor-series .transform { color: #d24fa1; }
+.ninju-editor-series .summon { color: #9a9cff; }
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-series {
+  display: none;
+}
 
 .ninju-editor-panel {
   position: absolute;
-  left: 128px;
+  left: 136px;
   top: 20px;
   right: 48px;
   height: 380px;
-  padding: 16px 24px;
+  padding: 12px 18px;
   background: #003b24;
   border: 8px solid #040404;
   box-shadow: inset 0 0 0 3px #13a0a8;
+  overflow: hidden;
 }
 
 .ninju-editor-title {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 18px;
   color: #dd7831;
-  font-size: 19px;
+  font-size: 17px;
   text-shadow: 1px 1px 0 #182316;
 }
 
 .ninju-editor-slot-row {
-  margin: 16px auto 20px;
+  margin: 10px auto 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ninju-editor-slots {
   width: fit-content;
   display: grid;
-  grid-template-columns: repeat(6, 78px);
-  gap: 10px;
-  padding: 8px 14px;
+  grid-template-columns: repeat(6, 72px);
+  gap: 8px;
+  padding: 7px 10px;
   background: linear-gradient(90deg, #fff4dc, #e5fff5);
 }
 
@@ -951,7 +960,7 @@ button:hover {
   border: 0;
   border-radius: 0;
   color: #232323;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   background-color: transparent;
   background-position: center;
@@ -974,11 +983,82 @@ button:hover {
 
 .ninju-editor-list {
   display: grid;
-  grid-template-columns: repeat(6, 78px);
-  grid-template-rows: repeat(5, 30px);
-  gap: 16px 10px;
+  grid-template-columns: repeat(8, 70px);
+  grid-auto-rows: 30px;
+  grid-template-rows: repeat(7, 30px);
+  gap: 8px 7px;
   align-items: center;
-  transform: translate(45px, 0);
+  max-height: 236px;
+  padding: 2px 8px 12px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-title span {
+  font-size: 0;
+}
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-title span::after {
+  content: "Choose eyes for this profile";
+  font-size: 17px;
+}
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-slot-row {
+  margin-top: 12px;
+}
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-slots {
+  display: flex;
+  justify-content: center;
+  width: 170px;
+  padding: 10px;
+}
+
+.eye-editor-preview {
+  position: relative;
+  width: 72px;
+  height: 64px;
+}
+
+.eye-editor-preview-avatar {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 56px;
+  height: 54px;
+}
+
+.eye-editor-preview-eyes {
+  position: absolute;
+  left: 16px;
+  top: 22px;
+  width: 35px;
+  height: 15px;
+}
+
+.room-ninju-editor[data-mode="eyes"] .ninju-editor-list {
+  grid-template-columns: repeat(10, 44px);
+  grid-auto-rows: 28px;
+  grid-template-rows: none;
+  gap: 8px;
+  max-height: 218px;
+  padding-left: 64px;
+}
+
+.eye-option {
+  width: 44px;
+  height: 28px;
+  border: 3px solid #315b63;
+  border-radius: 6px;
+  background-color: #e7f8ee;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 34px 14px;
+}
+
+.eye-option.selected {
+  border-color: #f1e535;
+  box-shadow: 0 0 0 2px #111;
 }
 
 .ninju-option {
@@ -986,27 +1066,47 @@ button:hover {
 }
 
 .ninju-option[data-editor-row="heal"] { grid-row: 1; }
-.ninju-option[data-editor-row="support"] { grid-row: 2; transform: translateY(18px); }
-.ninju-option[data-editor-row="attack"] { grid-row: 3; transform: translateY(36px); }
-.ninju-option[data-editor-row="special"] { grid-row: 4; transform: translateY(54px); }
-.ninju-option[data-editor-row="transform"] { grid-row: 5; transform: translateY(72px); }
+.ninju-option[data-editor-row="attack"] { grid-row: 2; }
+.ninju-option[data-editor-row="support"] { grid-row: 3; }
+.ninju-option[data-editor-row="special"] { grid-row: 4; }
+.ninju-option[data-editor-row="transform"] { grid-row: 6; }
+.ninju-option[data-editor-row="summon"] { grid-row: 7; }
 
 .ninju-slot-choice[data-ninju-type="moneyDart"],
 .ninju-option[data-ninju-type="moneyDart"] {
   background-image: url("assets/ninju/money_mark/button_base/3.png");
 }
 
-.ninju-slot-choice[data-ninju-type="flash"],
-.ninju-slot-choice[data-ninju-type="wildfire"],
+.ninju-option.special,
+.ninju-option.summon {
+  background-image: url("assets/ninju/buttons/1.png");
+}
+
+.ninju-option.transform {
+  background-image: url("assets/ninju/buttons/2.png");
+}
+
+.ninju-slot-choice[data-ninju-type="lightning"],
+.ninju-slot-choice[data-ninju-type="fireBall"],
+.ninju-slot-choice[data-ninju-type="airBlast"],
+.ninju-slot-choice[data-ninju-type="explode"],
 .ninju-slot-choice[data-ninju-type="freeze"],
+.ninju-slot-choice[data-ninju-type="thunderbolt"],
+.ninju-slot-choice[data-ninju-type="storm"],
+.ninju-slot-choice[data-ninju-type="iceArrow"],
 .ninju-slot-choice[data-ninju-type="seven"],
 .ninju-slot-choice[data-ninju-type="angel"],
 .ninju-slot-choice[data-ninju-type="death"],
 .ninju-slot-choice[data-ninju-type="butsumetsu"],
 .ninju-slot-choice[data-ninju-type="mouryo"],
-.ninju-option[data-ninju-type="flash"],
-.ninju-option[data-ninju-type="wildfire"],
+.ninju-option[data-ninju-type="lightning"],
+.ninju-option[data-ninju-type="fireBall"],
+.ninju-option[data-ninju-type="airBlast"],
+.ninju-option[data-ninju-type="explode"],
 .ninju-option[data-ninju-type="freeze"],
+.ninju-option[data-ninju-type="thunderbolt"],
+.ninju-option[data-ninju-type="storm"],
+.ninju-option[data-ninju-type="iceArrow"],
 .ninju-option[data-ninju-type="seven"],
 .ninju-option[data-ninju-type="angel"],
 .ninju-option[data-ninju-type="death"],
@@ -1017,9 +1117,19 @@ button:hover {
 
 .ninju-slot-choice[data-ninju-type="steel"],
 .ninju-slot-choice[data-ninju-type="hotBlood"],
+.ninju-slot-choice[data-ninju-type="kingKong"],
+.ninju-slot-choice[data-ninju-type="wild"],
+.ninju-slot-choice[data-ninju-type="bluePests"],
+.ninju-slot-choice[data-ninju-type="redPests"],
+.ninju-slot-choice[data-ninju-type="purify"],
 .ninju-slot-choice[data-ninju-type="fireToad"],
 .ninju-option[data-ninju-type="steel"],
 .ninju-option[data-ninju-type="hotBlood"],
+.ninju-option[data-ninju-type="kingKong"],
+.ninju-option[data-ninju-type="wild"],
+.ninju-option[data-ninju-type="bluePests"],
+.ninju-option[data-ninju-type="redPests"],
+.ninju-option[data-ninju-type="purify"],
 .ninju-option[data-ninju-type="fireToad"] {
   background-image: url("assets/ninju/buttons/2.png");
 }
@@ -1035,6 +1145,16 @@ button:hover {
 
 .ninju-option.selected {
   box-shadow: 0 0 0 3px #f1e535;
+}
+
+.ninju-option.locked {
+  cursor: not-allowed;
+  filter: grayscale(.78) brightness(.62);
+  opacity: .72;
+}
+
+.ninju-option.unimplemented {
+  color: #353535;
 }
 
 .ninju-editor-actions {

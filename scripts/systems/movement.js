@@ -1,5 +1,5 @@
 ﻿// ===== Movement / Collision =====
-// 依技量、障礙與方向規則執行玩家拖曳移動。
+// Applies drag movement using SP, blockers, and straight-line direction rules.
 function skillMove(unit, cell) {
   if (!cell) return;
   if (unit.moneyDart) {
@@ -60,7 +60,7 @@ function gainSoul(unit, steps) {
   if (afterLevel > beforeLevel) playSound(afterLevel >= soulMaxLevel ? "soulMax" : "soulLevelUp");
 }
 
-// 更新角色格子位置並啟動移動動畫。
+// Updates unit grid position and starts movement animation.
 function moveUnit(unit, x, y) {
   const movedDistance = manhattan(unit, { x, y });
   updateFacing(unit, { x, y });
@@ -79,7 +79,7 @@ function moveUnit(unit, x, y) {
   if (isMatchActive()) addOugi(unit, movedDistance * ougiMoveGainPerCell);
 }
 
-// 角色被撞或狀態中斷時取消目前拖曳畫面。
+// Cancels the current drag when a unit is bumped or interrupted.
 function cancelDragIfPressed(unit) {
   if (state.pressedUnit !== unit) return;
   state.pressedUnit = null;
@@ -87,8 +87,12 @@ function cancelDragIfPressed(unit) {
   state.charging = false;
 }
 
-// 處理移動撞到敵人時的傷害、消失與重生。
+// Handles damage, disappearance, and respawn when movement bumps an enemy.
 function collideWithEnemy(mover, enemy) {
+  if (isUnitCollisionProtected(enemy)) {
+    setMessage(`${enemy.name} cannot be bumped right now.`);
+    return;
+  }
   if (isFireToadActive(mover)) {
     defeatUnit(enemy, mover);
     setMessage(`${mover.name} crushed ${enemy.name}.`);
@@ -120,7 +124,7 @@ function collideWithEnemy(mover, enemy) {
   }
 }
 
-// 讓被撞掉但未死亡的角色隨機重生。
+// Respawns a bumped unit that was not killed.
 function respawnUnit(unit) {
   if (!state.units.includes(unit)) return;
   const cell = randomOpenCell();
@@ -142,7 +146,7 @@ function respawnUnit(unit) {
   setMessage(`${unit.name} respawned.`);
 }
 
-// 尋找沒有障礙、物件與角色佔用的隨機空格。
+// Finds a random empty cell without blockers, objects, or units.
 function randomOpenCell() {
   const candidates = [];
   for (let y = 1; y < grid.rows - 1; y++) {
@@ -155,13 +159,13 @@ function randomOpenCell() {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-// 依路徑與距離限制取得實際可抵達格。
+// Gets the reachable cell based on path and distance limits.
 function reachableMoveCell(unit, wanted, maxDistance = Infinity) {
   const path = movePath(unit, wanted, maxDistance);
   return path ? path.cell : null;
 }
 
-// 計算直線移動路徑，遇到障礙會停在前一格。
+// Builds a straight movement path and stops before blockers.
 function movePath(unit, wanted, maxDistance = Infinity) {
   if (!wanted || !isStraightMove(unit, wanted)) return null;
   const dx = Math.sign(wanted.x - unit.x);
@@ -180,6 +184,7 @@ function movePath(unit, wanted, maxDistance = Infinity) {
     if (isPermanentObstacle(x, y) || objectAt(x, y)) break;
     if (other) {
       if (other.team === unit.team) break;
+      if (isUnitCollisionProtected(other)) break;
       if (!isFireToadActive(unit) && isUnitInvincible(other)) break;
       hitEnemies.push(other);
     }
@@ -194,7 +199,7 @@ function movePath(unit, wanted, maxDistance = Infinity) {
   return lastOpen.x === unit.x && lastOpen.y === unit.y ? null : { cell: lastOpen, hitEnemies };
 }
 
-// 依滑鼠角度與位置計算拖曳移動目標格。
+// Calculates drag target cell from pointer position and angle.
 function dragMoveTargetCell(unit) {
   if (!unit) return null;
   const origin = cellCenter(unit.x, unit.y);
@@ -211,7 +216,7 @@ function dragMoveTargetCell(unit) {
   return inside(unit.x, y) ? { x: unit.x, y } : null;
 }
 
-// 檢查兩格之間是否有直線可通過。
+// Checks whether two cells have a clear straight path.
 function clearStraightPath(from, to, allowedFinalUnit) {
   if (!isStraightMove(from, to)) return false;
   const dx = Math.sign(to.x - from.x);

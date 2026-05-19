@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototype - Ougi Range Editor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11150f;
+      --panel: #1d261d;
+      --panel-2: #263225;
+      --line: #52624b;
+      --text: #f4f2dc;
+      --muted: #b6bea9;
+      --hit: #e7473f;
+      --hit-2: #ffb845;
+      --caster: #44b2e8;
+      --grid: #354436;
+      --void: #171d17;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(122, 48, 31, .42) 0 8%, transparent 8% 16%),
+        linear-gradient(#233006, #332a02 58%, #1f2807);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px minmax(760px, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .side,
+    .stage {
+      background: rgba(16, 21, 14, .94);
+      border: 2px solid #83906e;
+      box-shadow: inset 0 0 0 2px #071006;
+    }
+
+    .side {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 19px;
+      line-height: 1.1;
+    }
+
+    .tag {
+      color: #ffe44a;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    select,
+    button,
+    textarea {
+      border: 2px solid #819079;
+      background: linear-gradient(#f3e6bc, #d7b565);
+      color: #17150e;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    select,
+    button {
+      min-height: 34px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 8px;
+      min-height: 50px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      padding: 10px;
+      background: #10170f;
+      color: #f6f0cc;
+      border-color: #5f725a;
+      font: 12px Consolas, "Courier New", monospace;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .stage {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+      overflow: auto;
+    }
+
+    .stage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stage-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #d7d2a7;
+    }
+
+    .swatch.hit { background: var(--hit); }
+    .swatch.caster { background: var(--caster); }
+    .swatch.wall { background: var(--void); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(22, 34px);
+      grid-template-rows: repeat(12, 34px);
+      gap: 3px;
+      padding: 10px;
+      width: max-content;
+      background: #10170f;
+      border: 2px solid #6e7e61;
+      user-select: none;
+    }
+
+    .cell {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--grid);
+      background: #202b20;
+      color: #aebaa4;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .cell:hover {
+      outline: 2px solid #f1df74;
+      z-index: 2;
+    }
+
+    .cell.wall {
+      background: var(--void);
+      color: #596354;
+      cursor: default;
+    }
+
+    .cell.hit {
+      background: linear-gradient(135deg, var(--hit), var(--hit-2));
+      color: #120f07;
+      border-color: #ffe79c;
+    }
+
+    .cell.caster {
+      background: var(--caster);
+      color: #041119;
+      border-color: #d7f6ff;
+      font-weight: 900;
+    }
+
+    .coord {
+      position: absolute;
+      left: 3px;
+      top: 2px;
+      opacity: .85;
+    }
+
+    .center-mark {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="side">
+      <div>
+        <div class="tag">Prototype - wipe me</div>
+        <h1>Ougi Range Editor</h1>
+      </div>
+
+      <div class="row">
+        <label>Weapon
+          <select id="weaponSelect"></select>
+        </label>
+        <label>Ougi
+          <select id="slotSelect">
+            <option value="1">Ougi 1</option>
+            <option value="2">Ougi 2</option>
+            <option value="3">Ougi 3</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label>Facing
+          <select id="directionSelect">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+          </select>
+        </label>
+        <label>Preset
+          <select id="presetSelect">
+            <option value="current">Current Code</option>
+            <option value="empty">Empty</option>
+            <option value="line5">Line 5</option>
+            <option value="radius2">Radius 2</option>
+            <option value="radius3">Radius 3</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="toolbar">
+        <button id="applyPresetBtn" type="button">Apply Preset</button>
+        <button id="clearBtn" type="button">Clear</button>
+        <button id="mirrorBtn" type="button">Mirror</button>
+        <button id="copyBtn" type="button">Copy JSON</button>
+      </div>
+
+      <div class="summary">
+        <div class="metric"><span>Cells</span><strong id="cellCount">0</strong></div>
+        <div class="metric"><span>Weapon</span><strong id="weaponMetric">-</strong></div>
+        <div class="metric"><span>Facing</span><strong id="facingMetric">-</strong></div>
+      </div>
+
+      <textarea id="output" spellcheck="false"></textarea>
+    </aside>
+
+    <section class="stage">
+      <div class="stage-head">
+        <div class="stage-title" id="stageTitle">Range</div>
+        <div class="legend">
+          <span><i class="swatch caster"></i>Caster</span>
+          <span><i class="swatch hit"></i>Hit</span>
+          <span><i class="swatch wall"></i>Wall</span>
+        </div>
+      </div>
+      <div id="grid" class="grid" aria-label="Ougi range grid"></div>
+    </section>
+  </main>
+
+  <script>
+    const COLS = 22;
+    const ROWS = 12;
+    const caster = { x: 10, y: 6 };
+    const weapons = [
+      { key: "weapon1", label: "Kunai" },
+      { key: "weapon3", label: "Nodachi" },
+      { key: "weapon4", label: "Iga Hidden Blade" },
+      { key: "weapon6", label: "Shiranui Iron Fan" },
+      { key: "weapon19", label: "Muramasa" },
+      { key: "weapon20", label: "Seigaiha" },
+    ];
+    const directions = {
+      right: { dx: 1, dy: 0 },
+      left: { dx: -1, dy: 0 },
+      up: { dx: 0, dy: -1 },
+      down: { dx: 0, dy: 1 },
+    };
+
+    const state = {
+      weapon: "weapon19",
+      slot: "1",
+      direction: "right",
+      ranges: {},
+    };
+
+    const els = {
+      weaponSelect: document.querySelector("#weaponSelect"),
+      slotSelect: document.querySelector("#slotSelect"),
+      directionSelect: document.querySelector("#directionSelect"),
+      presetSelect: document.querySelector("#presetSelect"),
+      applyPresetBtn: document.querySelector("#applyPresetBtn"),
+      clearBtn: document.querySelector("#clearBtn"),
+      mirrorBtn: document.querySelector("#mirrorBtn"),
+      copyBtn: document.querySelector("#copyBtn"),
+      cellCount: document.querySelector("#cellCount"),
+      weaponMetric: document.querySelector("#weaponMetric"),
+      facingMetric: document.querySelector("#facingMetric"),
+      output: document.querySelector("#output"),
+      grid: document.querySelector("#grid"),
+      stageTitle: document.querySelector("#stageTitle"),
+    };
+
+    for (const weapon of weapons) {
+      const option = document.createElement("option");
+      option.value = weapon.key;
+      option.textContent = weapon.label;
+      els.weaponSelect.appendChild(option);
+    }
+
+    els.weaponSelect.value = state.weapon;
+    els.slotSelect.value = state.slot;
+    els.directionSelect.value = state.direction;
+
+    function rangeKey() {
+      return `${state.weapon}:${state.slot}:${state.direction}`;
+    }
+
+    function pointKey(point) {
+      return `${point.x},${point.y}`;
+    }
+
+    function currentSet() {
+      const key = rangeKey();
+      if (!state.ranges[key]) state.ranges[key] = new Set(presetCells("current").map(pointKey));
+      return state.ranges[key];
+    }
+
+    function inside(x, y) {
+      return x >= 0 && x < COLS && y >= 0 && y < ROWS;
+    }
+
+    function isWall(x, y) {
+      return x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1 || x === 1 || x === COLS - 2;
+    }
+
+    function presetCells(name) {
+      if (name === "empty") return [];
+      if (name === "line5") return lineCells(5);
+      if (name === "radius2") return radiusCells(2);
+      if (name === "radius3") return radiusCells(3);
+      if (state.slot === "1") return lineCells(5);
+      return radiusCells(state.slot === "2" ? 2 : 3);
+    }
+
+    function lineCells(distance) {
+      const dir = directions[state.direction];
+      const cells = [];
+      for (let step = 1; step <= distance; step++) {
+        const x = caster.x + dir.dx * step;
+        const y = caster.y + dir.dy * step;
+        if (inside(x, y)) cells.push({ x, y });
+      }
+      return cells;
+    }
+
+    function radiusCells(radius) {
+      const cells = [];
+      for (let y = caster.y - radius; y <= caster.y + radius; y++) {
+        for (let x = caster.x - radius; x <= caster.x + radius; x++) {
+          if (x === caster.x && y === caster.y) continue;
+          if (inside(x, y) && Math.max(Math.abs(x - caster.x), Math.abs(y - caster.y)) <= radius) cells.push({ x, y });
+        }
+      }
+      return cells;
+    }
+
+    function offsetsFromSet(set) {
+      return [...set].map((value) => {
+        const [x, y] = value.split(",").map(Number);
+        return { dx: x - caster.x, dy: y - caster.y };
+      }).sort((a, b) => a.dy - b.dy || a.dx - b.dx);
+    }
+
+    function payload() {
+      const set = currentSet();
+      return {
+        weaponKey: state.weapon,
+        slot: Number(state.slot),
+        direction: state.direction,
+        caster,
+        cells: [...set].map((value) => {
+          const [x, y] = value.split(",").map(Number);
+          return { x, y };
+        }).sort((a, b) => a.y - b.y || a.x - b.x),
+        offsets: offsetsFromSet(set),
+      };
+    }
+
+    function renderGrid() {
+      const set = currentSet();
+      els.grid.innerHTML = "";
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const cell = document.createElement("button");
+          const key = pointKey({ x, y });
+          const casterCell = x === caster.x && y === caster.y;
+          cell.type = "button";
+          cell.className = `cell${isWall(x, y) ? " wall" : ""}${set.has(key) ? " hit" : ""}${casterCell ? " caster" : ""}`;
+          cell.innerHTML = `<span class="coord">${x},${y}</span>${casterCell ? '<span class="center-mark">NIN</span>' : ""}`;
+          cell.addEventListener("click", () => {
+            if (casterCell || isWall(x, y)) return;
+            if (set.has(key)) set.delete(key);
+            else set.add(key);
+            render();
+          });
+          els.grid.appendChild(cell);
+        }
+      }
+    }
+
+    function render() {
+      const selectedWeapon = weapons.find((weapon) => weapon.key === state.weapon);
+      const data = payload();
+      els.stageTitle.textContent = `${selectedWeapon.label} - Ougi ${state.slot}`;
+      els.cellCount.textContent = String(data.cells.length);
+      els.weaponMetric.textContent = selectedWeapon.key.replace("weapon", "W");
+      els.facingMetric.textContent = state.direction;
+      els.output.value = JSON.stringify(data, null, 2);
+      renderGrid();
+    }
+
+    function applyPreset(name) {
+      state.ranges[rangeKey()] = new Set(presetCells(name).map(pointKey));
+      render();
+    }
+
+    function mirrorCurrent() {
+      const set = currentSet();
+      const mirrored = new Set();
+      for (const value of set) {
+        const [x, y] = value.split(",").map(Number);
+        mirrored.add(pointKey({ x: caster.x - (x - caster.x), y }));
+      }
+      state.ranges[rangeKey()] = mirrored;
+      render();
+    }
+
+    els.weaponSelect.addEventListener("change", () => {
+      state.weapon = els.weaponSelect.value;
+      render();
+    });
+    els.slotSelect.addEventListener("change", () => {
+      state.slot = els.slotSelect.value;
+      render();
+    });
+    els.directionSelect.addEventListener("change", () => {
+      state.direction = els.directionSelect.value;
+      render();
+    });
+    els.applyPresetBtn.addEventListener("click", () => applyPreset(els.presetSelect.value));
+    els.clearBtn.addEventListener("click", () => applyPreset("empty"));
+    els.mirrorBtn.addEventListener("click", mirrorCurrent);
+    els.copyBtn.addEventListener("click", async () => {
+      els.output.select();
+      try {
+        await navigator.clipboard.writeText(els.output.value);
+      } catch (_) {
+        document.execCommand("copy");
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

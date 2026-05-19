@@ -23,6 +23,7 @@ Current focus areas:
 - Ougi animations and sounds for custom weapons.
 - Death and win/loss result animations.
 - Imported reference assets for jutsu effects, sounds, movement, and UI.
+- Per-profile eye customization from the room editor.
 
 ## Main Files
 
@@ -74,9 +75,11 @@ Some controls and tuning are still prototype-level and may change as the project
 ## Custom Content
 
 - Weapon 19 is Muramasa.
-- Weapon 20 has been added.
-- Weapon 19 currently uses Iga Hidden Blade-style range and timing with higher damage.
-- Weapon 20 currently uses Fan-style range and timing with higher damage.
+- Weapon 20 is Seigaiha.
+- Weapons 1-20 are represented in the English weapon list, with currently exported Ougi assets for the implemented weapons.
+- Ougi selection is soul-tier based: tier 1 casts Ougi 1, tier 2 casts Ougi 2, and tier 3 or 4 casts Ougi 3.
+- Attack and summon jutsus use the shared Z/special gauge.
+- Butsumetsu kills enemies in range immediately and kills the caster shortly after.
 - Backup is a consumable item that restores SP to full.
 - Gold can be collected from hay objects and is stored on the player.
 

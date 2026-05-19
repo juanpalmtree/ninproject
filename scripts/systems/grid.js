@@ -1,5 +1,5 @@
 // ===== Grid / Coordinate Helpers =====
-// 把程式內部格子座標轉成玩家看的座標：左下角可走第一格是 [1,1]。
+// Converts internal grid coordinates to player-facing coordinates: the bottom-left walkable cell is [1,1].
 function displayCellCoord(cell) {
   return {
     x: cell.x - 1,
@@ -7,7 +7,7 @@ function displayCellCoord(cell) {
   };
 }
 
-// 把玩家看的座標轉回程式內部格子座標。
+// Converts player-facing coordinates back to internal grid coordinates.
 function internalCellCoord(cell) {
   return {
     x: cell.x + 1,
@@ -15,53 +15,53 @@ function internalCellCoord(cell) {
   };
 }
 
-// 尋找指定格子上的角色。
+// Finds the unit on a cell.
 function unitAt(x, y) {
   return state.units.find((u) => u.alive && u.x === x && u.y === y && !(typeof isYashaoHiddenFromMatch === "function" && isYashaoHiddenFromMatch(u)));
 }
 
-// 判斷指定格子是否被角色佔用。
+// Checks whether a cell is occupied by a unit.
 function occupied(x, y) {
   return Boolean(unitAt(x, y));
 }
 
-// 尋找指定格子上的地圖物件。
+// Finds the map object on a cell.
 function objectAt(x, y) {
   if (!state.objects) return null;
   return state.objects.find((object) => object.alive && object.x === x && object.y === y) || null;
 }
 
-// 取得指定格子的上下左右鄰居。
+// Gets the orthogonal neighbors of a cell.
 function neighbors(x, y) {
   return [{ x: x + 1, y }, { x: x - 1, y }, { x, y: y + 1 }, { x, y: y - 1 }];
 }
 
-// 計算兩格的曼哈頓距離。
+// Calculates Manhattan distance between two cells.
 function manhattan(a, b) {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-// 把數值限制在最小與最大值之間。
+// Clamps a value between a minimum and maximum.
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-// 判斷兩格是否為水平或垂直移動。
+// Checks whether two cells form a horizontal or vertical move.
 function isStraightMove(a, b) {
   return a.x === b.x || a.y === b.y;
 }
 
-// 判斷格子是否在地圖範圍內。
+// Checks whether a cell is inside the map bounds.
 function inside(x, y) {
   return x >= 0 && x < grid.cols && y >= 0 && y < grid.rows;
 }
 
-// 判斷格子是否因永久障礙或物件而不可通行。
+// Checks whether a cell is blocked by permanent obstacles or objects.
 function isBlockedCell(x, y) {
   return isPermanentObstacle(x, y) || Boolean(objectAt(x, y));
 }
 
-// 判斷格子是否是不可破壞的外圍障礙。
+// Checks whether a cell is an unbreakable outer obstacle.
 function isPermanentObstacle(x, y) {
   if (!inside(x, y)) return true;
   if (x === 0 || x === grid.cols - 1) return true;
@@ -70,30 +70,30 @@ function isPermanentObstacle(x, y) {
   return false;
 }
 
-// 判斷滑鼠目前是否仍停在按住的角色身上。
+// Checks whether the pointer is still over the pressed unit.
 function pointerIsOnUnit(unit) {
   if (!state.pointer.cell) return false;
   return state.pointer.cell.x === unit.x && state.pointer.cell.y === unit.y;
 }
 
-// 取得指定格子在畫面上的矩形位置。
+// Gets the screen rectangle for a cell.
 function cellRect(x, y) {
   return { x: grid.left + x * grid.cell, y: grid.top + y * grid.cell, w: grid.cell, h: grid.cell };
 }
 
-// 取得指定格子的中心點座標。
+// Gets the screen center point for a cell.
 function cellCenter(x, y) {
   return { x: grid.left + x * grid.cell + grid.cell / 2, y: grid.top + y * grid.cell + grid.cell / 2 };
 }
 
-// 把畫面座標轉成地圖格子。
+// Converts screen coordinates to a map cell.
 function pointToCell(px, py) {
   const x = Math.floor((px - grid.left) / grid.cell);
   const y = Math.floor((py - grid.top) / grid.cell);
   return inside(x, y) ? { x, y } : null;
 }
 
-// 把滑鼠事件座標轉成地圖格子。
+// Converts a pointer event to a map cell.
 function eventCell(event) {
   pointerMove(event);
   return state.pointer.cell;

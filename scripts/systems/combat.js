@@ -1,5 +1,5 @@
 // ===== Combat =====
-// 處理武器直接攻擊敵方角色。
+// Handles direct weapon attacks against enemy units.
 function attack(attacker, target) {
   if (isUnitDisabled(attacker)) {
     setMessage(`${attacker.name}: cannot act now.`);
@@ -11,6 +11,10 @@ function attack(attacker, target) {
   }
   if (attacker.moneyDart) {
     setMessage(`${attacker.name}: cannot attack while holding money dart.`);
+    return;
+  }
+  if (isAnyUnitCastingNinju()) {
+    setMessage(`${attacker.name}: cannot attack during a ninjutsu cast.`);
     return;
   }
   if (isUnitCastingNinju(attacker)) {
@@ -33,7 +37,7 @@ function attack(attacker, target) {
   attackCell(attacker, { x: attacker.x + dir.dx, y: attacker.y + dir.dy });
 }
 
-// 套用角色傷害、無敵判定、防禦係數與死亡處理。
+// Applies unit damage, invincibility checks, defense scaling, and death handling.
 function damageUnit(target, baseDamage, label, announce = true, attacker = null, playHitSound = true, grantOugi = true) {
   const damage = defendedDamage(target, baseDamage);
   target.hp -= damage;
@@ -47,7 +51,7 @@ function damageUnit(target, baseDamage, label, announce = true, attacker = null,
   return damage;
 }
 
-// 紀錄造成傷害與承受傷害，用於結算畫面。
+// Records dealt and taken damage for the result screen.
 function recordDamage(attacker, target, damage) {
   const amount = Math.max(0, damage);
   if (target) {
@@ -60,7 +64,7 @@ function recordDamage(attacker, target, damage) {
   }
 }
 
-// 處理武器攻擊地圖物件與破壞音效。
+// Handles weapon hits against map objects and break sounds.
 function damageObject(object, attacker) {
   const damage = unitWeaponDamage(attacker);
   object.hp = Math.max(0, object.hp - damage);
@@ -72,7 +76,7 @@ function damageObject(object, attacker) {
   }
 }
 
-// 攻擊指定格子，可能打到敵人或物件。
+// Attacks a target cell, potentially hitting enemies or objects.
 function attackCell(attacker, cell) {
   if (isUnitDisabled(attacker)) {
     setMessage(`${attacker.name}: cannot act now.`);
@@ -84,6 +88,10 @@ function attackCell(attacker, cell) {
   }
   if (attacker.moneyDart) {
     setMessage(`${attacker.name}: cannot attack while holding money dart.`);
+    return;
+  }
+  if (isAnyUnitCastingNinju()) {
+    setMessage(`${attacker.name}: cannot attack during a ninjutsu cast.`);
     return;
   }
   if (isUnitCastingNinju(attacker) || isUnitInNinjuGap(attacker)) {
@@ -123,7 +131,7 @@ function attackCell(attacker, cell) {
   setMessage(`${attacker.name} hit ${targetCount} targets.`);
 }
 
-// 點遠處時推算方向，再攻擊角色旁邊一格。
+// When clicking a distant point, derives direction and attacks the adjacent cell.
 function attackAimedWeapon(attacker, targetCell) {
   if (isUnitDisabled(attacker)) {
     setMessage(`${attacker.name}: cannot act now.`);
@@ -135,6 +143,10 @@ function attackAimedWeapon(attacker, targetCell) {
   }
   if (attacker.moneyDart) {
     setMessage(`${attacker.name}: cannot attack while holding money dart.`);
+    return;
+  }
+  if (isAnyUnitCastingNinju()) {
+    setMessage(`${attacker.name}: cannot attack during a ninjutsu cast.`);
     return;
   }
   if (isUnitCastingNinju(attacker) || isUnitInNinjuGap(attacker)) {
@@ -157,18 +169,18 @@ function attackAimedWeapon(attacker, targetCell) {
   attackCell(attacker, { x: attacker.x + dir.dx, y: attacker.y + dir.dy });
 }
 
-// 判斷角色武器冷卻是否結束。
+// Checks whether the unit weapon cooldown has ended.
 function weaponIsReady(unit) {
   return performance.now() >= (unit.weaponReadyAt || 0);
 }
 
-// 記錄角色本次揮砍時間，套用武器冷卻。
+// Records this slash and applies weapon cooldown.
 function markWeaponUsed(unit) {
   const weapon = weaponDefinitionByKey[unit.weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
   unit.weaponReadyAt = performance.now() + (weapon.cooldownMs || weaponCooldownMs);
 }
 
-// 取得角色目前武器傷害；若武器未設置則回退到全域傷害。
+// Gets the current weapon damage, falling back to the global value when needed.
 function unitWeaponDamage(unit) {
   const weapon = weaponDefinitionByKey[unit.weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
   if (!weapon) return weaponDamage;
@@ -176,7 +188,7 @@ function unitWeaponDamage(unit) {
   return isHotBloodActive(unit) ? baseDamage * hotBloodRule().weaponDamageMultiplier : baseDamage;
 }
 
-// 依武器種類取得實際攻擊格形。
+// Gets the actual attack cell shape for the equipped weapon.
 function weaponAreaCells(attacker, dir) {
   const weapon = weaponDefinitionByKey[attacker.weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
   const x = attacker.x;
@@ -205,11 +217,31 @@ function weaponAreaCells(attacker, dir) {
     cells.push({ x: x + dir.dx * 3, y: y + dir.dy * 3 });
     return cells.filter((cell) => inside(cell.x, cell.y));
   }
-  if (weapon.area === "line2") {
-    return [
-      { x: x + dir.dx, y: y + dir.dy },
-      { x: x + dir.dx * 2, y: y + dir.dy * 2 },
-    ].filter((cell) => inside(cell.x, cell.y));
+  if (weapon.area === "kogaChain") {
+    const perpendicular = dir.dx !== 0 ? { x: 0, y: 1 } : { x: 1, y: 0 };
+    const cells = [];
+    for (let distance = 1; distance <= 6; distance++) {
+      cells.push({ x: x + dir.dx * distance, y: y + dir.dy * distance });
+    }
+    for (const distance of [1, 2, 5, 6]) {
+      for (const side of [-1, 1]) {
+        cells.push({
+          x: x + dir.dx * distance + perpendicular.x * side,
+          y: y + dir.dy * distance + perpendicular.y * side,
+        });
+      }
+    }
+    return cells
+      .filter((cell, index, list) => inside(cell.x, cell.y) && list.findIndex((candidate) => candidate.x === cell.x && candidate.y === cell.y) === index);
+  }
+  const lineMatch = /^line(\d+)$/.exec(weapon.area || "");
+  if (lineMatch) {
+    const distance = Number(lineMatch[1]);
+    const cells = [];
+    for (let step = 1; step <= distance; step++) {
+      cells.push({ x: x + dir.dx * step, y: y + dir.dy * step });
+    }
+    return cells.filter((cell) => inside(cell.x, cell.y));
   }
   if (weapon.area === "fan") {
     const shapes = {
@@ -228,12 +260,12 @@ function weaponAreaCells(attacker, dir) {
   };
   return (shapes[dir.name] || []).filter((cell) => inside(cell.x, cell.y));
 }
-// 判斷指定格是否落在目前武器攻擊格形中。
+// Checks whether a cell is inside the current weapon attack shape.
 function isCellInWeaponRange(attacker, cell, dir) {
   return weaponAreaCells(attacker, dir).some((hitCell) => hitCell.x === cell.x && hitCell.y === cell.y);
 }
 
-// 點到特殊格形時，先用格形決定方向；沒有落在格形時才退回一般滑鼠角度方向。
+// Uses special weapon shapes to pick direction before falling back to pointer angle.
 function weaponDirectionFromTarget(attacker, target) {
   const preferred = directionFromTarget(attacker, target);
   if (preferred && isCellInWeaponRange(attacker, target, preferred)) return preferred;
@@ -246,13 +278,13 @@ function weaponDirectionFromTarget(attacker, target) {
   return directions.find((dir) => isCellInWeaponRange(attacker, target, dir)) || preferred;
 }
 
-// 取得武器動畫錨點；動畫用前方鄰格，避免組合圖被拉到範圍最遠處而偏掉。
+// Gets the weapon animation anchor; most animations use the adjacent forward cell.
 function weaponSlashAnchorCell(attacker, dir) {
   const weapon = weaponDefinitionByKey[attacker.weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
   if (weapon.area === "surround") return { x: attacker.x, y: attacker.y };
   return { x: attacker.x + dir.dx, y: attacker.y + dir.dy };
 }
-// 依武器格形掃描 AOE，範圍內所有敵人與可破壞物件都會被命中。
+// Scans weapon AOE cells; every enemy and breakable object in range is hit.
 function weaponHitInDirection(attacker, dir) {
   const hits = { units: [], objects: [] };
   for (const cell of weaponAreaCells(attacker, dir)) {
@@ -269,7 +301,7 @@ function weaponHitInDirection(attacker, dir) {
   return hits;
 }
 
-// 加入一筆揮砍動畫並播放武器音效。
+// Adds one slash animation and plays the weapon sound.
 function playSlash(attacker, target) {
   const weapon = weaponDefinitionByKey[attacker.weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
   playSound(weapon?.soundKey || "slash");

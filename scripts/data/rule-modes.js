@@ -3,8 +3,8 @@
 const modeRuleProfiles = {
   modified: {
     weapons: {
-      weapon4: { damage: 40 }, // 伊賀密刀
-      weapon6: { damage: 13 }, // 鐵扇不知火
+      weapon4: { damage: 40 }, // Iga Hidden Blade
+      weapon6: { damage: 13 }, // Shiranui Iron Fan
     },
     ninjutsu: {
       steel: {
@@ -76,8 +76,8 @@ const modeRuleProfiles = {
   },
   original: {
     weapons: {
-      weapon4: { damage: 50 }, // 伊賀密刀
-      weapon6: { damage: 25 }, // 鐵扇不知火
+      weapon4: { damage: 50 }, // Iga Hidden Blade
+      weapon6: { damage: 25 }, // Shiranui Iron Fan
     },
     ninjutsu: {
       steel: {

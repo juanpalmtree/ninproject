@@ -28,10 +28,10 @@ const ninjuChainMaxGap = 500;
 const ninjuFollowupMoveAllowance = 2;
 const steelDefenseMultiplier = 1.7;
 
-// 忍術按鈕位置/大小：x,y 控位置；w,h 控尺寸。
-const moneyDartButtonRect = { x: 508, y: 600, w: 65, h: 30 }; // 錢鏢按鈕
-const steelButtonRect = { x: 582, y: 600, w: 65, h: 30 }; // 鋼鐵按鈕
-const hotBloodButtonRect = { x: 656, y: 600, w: 65, h: 30 }; // 熱血按鈕
+// Jutsu button positions and sizes: x/y control position; w/h control dimensions.
+const moneyDartButtonRect = { x: 508, y: 600, w: 65, h: 30 }; // Koban button
+const steelButtonRect = { x: 582, y: 600, w: 65, h: 30 }; // Steel button
+const hotBloodButtonRect = { x: 656, y: 600, w: 65, h: 30 }; // Heat button
 const fireToadButtonRect = { x: 730, y: 600, w: 65, h: 30 };
 const moneyDartReadyMs = 250;
 const moneyDartPostThrowNinjuLockMs = 250;
@@ -48,6 +48,15 @@ const soulStepsPerLevel = 27;
 const soulMaxLevel = 4;
 const soulCombatGainSteps = soulStepsPerLevel / 5;
 const soulDeathGainSteps = soulStepsPerLevel;
+const attackJutsuStunMs = 2000;
+const jutsuMissEffectMs = 450;
+const butsumetsuCasterDeathDelayMs = 500;
+const attackJutsuTierRules = {
+  1: { globalHitChance: 0.30, perTargetHitChance: 0.30 },
+  2: { globalHitChance: 0.50, perTargetHitChance: 0.50 },
+  3: { globalHitChance: 0.80, perTargetHitChance: 0.70 },
+  4: { globalHitChance: 0.90, perTargetHitChance: 0.85 },
+};
 const flashHitChance = 0.6;
 const flashDamage = 50;
 const flashMissDisableMs = 1500;

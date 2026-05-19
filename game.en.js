@@ -24,6 +24,7 @@ const ninjuEditorCancelBtn = document.querySelector("#ninjuEditorCancel");
 const ninjuEditorSaveBtn = document.querySelector("#ninjuEditorSave");
 const ninjuEditorLevelEl = document.querySelector("#ninjuEditorLevel");
 const ninjuEditorRoleEl = document.querySelector("#ninjuEditorRole");
+const ninjuEditorTabEls = Array.from(document.querySelectorAll(".ninju-editor-tabs button"));
 const roomCardEls = Array.from(document.querySelectorAll(".room-player-card"));
 const weaponSelectEls = Array.from(document.querySelectorAll(".room-weapon-select"));
 const controlSelectEls = Array.from(document.querySelectorAll(".room-control-select"));
@@ -81,41 +82,76 @@ const ougiBodyTeamFrameCache = new WeakMap();
 // Match-end win/loss animations advance at the same frame speed.
 const matchEndFrameMs = 75;
 const yashaoHiddenIntroMs = 3000;
-const yashaoFrozenIntroMs = 3000;
+const yashaoAiStartDelayMs = 5000;
+const yashaoFrozenIntroMs = Math.max(0, yashaoAiStartDelayMs - yashaoHiddenIntroMs);
 const itemSlotStartX = 510;
 const itemSlotY = 558;
 const itemSlotW = 38;
 const itemSlotH = 34;
 const itemSlotGap = 6;
 const progressionUiVisible = false;
+const ninjuTestingFullAccess = true;
 const ninjuCatalog = [
-  { type: "moneyDart", label: "Dart", group: "projectile", editorRow: "special", editorOrder: 1 },
-  { type: "steel", label: "Steel", group: "buff", editorRow: "support", editorOrder: 1 },
-  { type: "hotBlood", label: "Rage", group: "buff", editorRow: "support", editorOrder: 2 },
-  { type: "genki", label: "Genki", group: "heal", editorRow: "heal", editorOrder: 1 },
-  { type: "kakki", label: "Kakki", group: "heal", editorRow: "heal", editorOrder: 2 },
-  { type: "shinki", label: "Shinki", group: "heal", editorRow: "heal", editorOrder: 3 },
-  { type: "flash", label: "Flash", group: "attack", editorRow: "attack", editorOrder: 1 },
-  { type: "wildfire", label: "Wild", group: "attack", editorRow: "attack", editorOrder: 2 },
-  { type: "freeze", label: "Freeze", group: "attack", editorRow: "attack", editorOrder: 3 },
-  { type: "seven", label: "Seven", group: "special", editorRow: "special", editorOrder: 2 },
-  { type: "angel", label: "Angel", group: "special", editorRow: "special", editorOrder: 3 },
-  { type: "death", label: "Death", group: "special", editorRow: "special", editorOrder: 4 },
-  { type: "butsumetsu", label: "Butsu", group: "special", editorRow: "special", editorOrder: 5 },
-  { type: "mouryo", label: "Mouryo", group: "special", editorRow: "special", editorOrder: 6 },
-  { type: "fireToad", label: "Toad", group: "transform", editorRow: "transform", editorOrder: 1 },
+  { type: "genki", label: "HealBall", unlockName: "HealBall", series: "restore", group: "heal", editorRow: "heal", editorOrder: 1, implemented: true },
+  { type: "kakki", label: "HealLight", unlockName: "HealLight", series: "restore", group: "heal", editorRow: "heal", editorOrder: 2, implemented: true },
+  { type: "shinki", label: "HolyLight", unlockName: "HolyLight", series: "restore", group: "heal", editorRow: "heal", editorOrder: 3, implemented: true },
+  { type: "lightning", label: "Lightning", unlockName: "Lightning", series: "attack", group: "attack", editorRow: "attack", editorOrder: 1, implemented: true },
+  { type: "fireBall", label: "FireBall", unlockName: "FireBall", series: "attack", group: "attack", editorRow: "attack", editorOrder: 2, implemented: true },
+  { type: "airBlast", label: "AirBlast", unlockName: "AirBlast", series: "attack", group: "attack", editorRow: "attack", editorOrder: 3, implemented: true },
+  { type: "explode", label: "Explode", unlockName: "Explode", series: "attack", group: "attack", editorRow: "attack", editorOrder: 4, implemented: true },
+  { type: "freeze", label: "Freeze", unlockName: "Freeze", series: "attack", group: "attack", editorRow: "attack", editorOrder: 5, implemented: true },
+  { type: "thunderbolt", label: "Thunderbolt", unlockName: "Thunderbolt", series: "attack", group: "attack", editorRow: "attack", editorOrder: 6, implemented: true },
+  { type: "storm", label: "Storm", unlockName: "Storm", series: "attack", group: "attack", editorRow: "attack", editorOrder: 7, implemented: true },
+  { type: "iceArrow", label: "IceArrow", unlockName: "IceArrow", series: "attack", group: "attack", editorRow: "attack", editorOrder: 8, implemented: true },
+  { type: "steel", label: "Steel", unlockName: "Steel", series: "assist", group: "buff", editorRow: "support", editorOrder: 1, implemented: true },
+  { type: "hotBlood", label: "Heat", unlockName: "Heat", series: "assist", group: "buff", editorRow: "support", editorOrder: 2, implemented: true },
+  { type: "kingKong", label: "KingKong", unlockName: "KingKong", series: "assist", group: "buff", editorRow: "support", editorOrder: 3, implemented: false },
+  { type: "wild", label: "Wild", unlockName: "Wild", series: "assist", group: "buff", editorRow: "support", editorOrder: 4, implemented: false },
+  { type: "bluePests", label: "BluePests", unlockName: "BluePests", series: "assist", group: "buff", editorRow: "support", editorOrder: 5, implemented: false },
+  { type: "redPests", label: "RedPests", unlockName: "RedPests", series: "assist", group: "buff", editorRow: "support", editorOrder: 6, implemented: false },
+  { type: "purify", label: "Purify", unlockName: "Purify", series: "assist", group: "buff", editorRow: "support", editorOrder: 7, implemented: false },
+  { type: "kusa", label: "Kusa", unlockName: "Kusa", series: "special", group: "special", editorRow: "special", editorOrder: 1, implemented: false },
+  { type: "ishi", label: "Ishi", unlockName: "Ishi", series: "special", group: "special", editorRow: "special", editorOrder: 2, implemented: false },
+  { type: "kami", label: "Kami", unlockName: "Kami", series: "special", group: "special", editorRow: "special", editorOrder: 3, implemented: false },
+  { type: "jinton", label: "Jinton", unlockName: "Jinton", series: "special", group: "special", editorRow: "special", editorOrder: 4, implemented: false },
+  { type: "huTon", label: "Hu-ton", unlockName: "Hu-ton", series: "special", group: "special", editorRow: "special", editorOrder: 5, implemented: false },
+  { type: "dokuton", label: "Dokuton", unlockName: "Dokuton", series: "special", group: "special", editorRow: "special", editorOrder: 6, implemented: false },
+  { type: "mokuton", label: "Mokuton", unlockName: "Mokuton", series: "special", group: "special", editorRow: "special", editorOrder: 7, implemented: false },
+  { type: "katon", label: "Katon", unlockName: "Katon", series: "special", group: "special", editorRow: "special", editorOrder: 8, implemented: false },
+  { type: "kinton", label: "Kinton", unlockName: "Kinton", series: "special", group: "special", editorRow: "special", editorOrder: 9, implemented: false },
+  { type: "moneyDart", label: "Koban", unlockName: "Koban", series: "special", group: "projectile", editorRow: "special", editorOrder: 10, implemented: true },
+  { type: "bunshin", label: "Bunshin", unlockName: "Bunshi", series: "special", group: "special", editorRow: "special", editorOrder: 11, implemented: false },
+  { type: "steal", label: "Steal", unlockName: "Steal", series: "special", group: "special", editorRow: "special", editorOrder: 12, implemented: false },
+  { type: "seven", label: "Seven", unlockName: "Seven", series: "special", group: "special", editorRow: "special", editorOrder: 13, implemented: true },
+  { type: "butsumetsu", label: "Butsu", unlockName: "Butsumetsu", series: "special", group: "special", editorRow: "special", editorOrder: 14, implemented: true },
+  { type: "chaos", label: "Chaos", unlockName: "Chaos", series: "special", group: "special", editorRow: "special", editorOrder: 15, implemented: false },
+  { type: "naraku", label: "Naraku", unlockName: "Naraku", series: "special", group: "special", editorRow: "special", editorOrder: 16, implemented: false },
+  { type: "yasha", label: "Yasha", unlockName: "Yasha", series: "transform", group: "transform", editorRow: "transform", editorOrder: 1, implemented: false },
+  { type: "akaoni", label: "Akaoni", unlockName: "Akaoni", series: "transform", group: "transform", editorRow: "transform", editorOrder: 2, implemented: false },
+  { type: "fireToad", label: "Gama", unlockName: "Gama", series: "transform", group: "transform", editorRow: "transform", editorOrder: 3, implemented: true },
+  { type: "kubi", label: "Kubi", unlockName: "Kubi", series: "summon", group: "summon", editorRow: "summon", editorOrder: 1, implemented: false },
+  { type: "mouryo", label: "Mouryo", unlockName: "Mouryo", series: "summon", group: "summon", editorRow: "summon", editorOrder: 2, implemented: true },
+  { type: "death", label: "Death", unlockName: "Death", series: "summon", group: "summon", editorRow: "summon", editorOrder: 3, implemented: true },
+  { type: "angel", label: "Angel", unlockName: "Angel", series: "summon", group: "summon", editorRow: "summon", editorOrder: 4, implemented: true },
+  { type: "jumoku", label: "Jumoku", unlockName: "Jumoku", series: "summon", group: "summon", editorRow: "summon", editorOrder: 5, implemented: false },
 ];
 const ninjuByType = Object.fromEntries(ninjuCatalog.map((ninju) => [ninju.type, ninju]));
-const ninjuEditorRowOrder = { heal: 1, support: 2, attack: 3, special: 4, transform: 5 };
+const ninjutsuUnlockByName = Object.fromEntries(ninjutsuUnlocks.map((unlock) => [unlock.name, unlock]));
+const ninjuEditorRowOrder = { heal: 1, attack: 2, support: 3, special: 4, transform: 6, summon: 7 };
 const ninjuEditorCatalog = [...ninjuCatalog].sort((a, b) => (
   (ninjuEditorRowOrder[a.editorRow] || 99) - (ninjuEditorRowOrder[b.editorRow] || 99)
   || a.editorOrder - b.editorOrder
 ));
-const defaultNinjuLoadout = ["moneyDart", "steel", "hotBlood", "fireToad", "genki", "flash"];
+const defaultNinjuLoadout = ["moneyDart", "steel", "hotBlood", "genki", "lightning", "fireBall"];
 const ninjuLoadoutStorageKey = "nindou2.en.ninjuLoadout";
+const defaultEyeStyle = "11";
+const eyeStyleIds = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "99", "100", "998", "999"];
+const eyeFrames = Object.fromEntries(eyeStyleIds.map((id) => [id, { front: null, side: null }]));
 let selectedNinjuLoadout = loadSavedNinjuLoadout();
 let editNinjuDraft = [...selectedNinjuLoadout];
 let editNinjuSlotIndex = 0;
+let editEyeStyleDraft = defaultEyeStyle;
+let ninjuEditorMode = "ninju";
 
 // ===== Asset Loading =====
 function loadImages() {
@@ -128,6 +164,10 @@ function loadImages() {
     img.onerror = resolve;
     img.src = src;
   }));
+  const eyeImages = eyeStyleIds.flatMap((id) => ([
+    loadEyeFrame(`assets/ninja-composite-parts/eyes-middle/${id}.png`, id, "front"),
+    loadEyeFrame(`assets/ninja-composite-parts/eyes-look-right/${id}.png`, id, "side"),
+  ]));
   const ninjuImages = defUpFrameSources.map((src, index) => new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -216,7 +256,7 @@ function loadImages() {
   ];
   const chargeRedImages = chargeRedFrameSources.map((src, index) => loadFrame(src, chargeRedFrames, index));
   const chargeYellowImages = chargeYellowFrameSources.map((src, index) => loadFrame(src, chargeYellowFrames, index));
-  return Promise.all([...staticImages, ...ninjuImages, ...atkUpImages, ...regenHpSmallImages, ...regenHpLargeImages, ...smallThunderSummonImages, ...smallThunderDamagedImages, ...smallFireSummonImages, ...smallFireDamagedImages, ...smallIceSummonImages, ...smallIceDamagedImages, ...smallIceBreakImages, ...specialNinjuImages, ...specialNinjuHitImages, ...damageFailImages, ...faintedImages, ...damageSuccessSmallImages, ...damageSuccessMiddleImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...useNinjuImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages, ...yashaoImages]);
+  return Promise.all([...staticImages, ...eyeImages, ...ninjuImages, ...atkUpImages, ...regenHpSmallImages, ...regenHpLargeImages, ...smallThunderSummonImages, ...smallThunderDamagedImages, ...smallFireSummonImages, ...smallFireDamagedImages, ...smallIceSummonImages, ...smallIceDamagedImages, ...smallIceBreakImages, ...specialNinjuImages, ...specialNinjuHitImages, ...damageFailImages, ...faintedImages, ...damageSuccessSmallImages, ...damageSuccessMiddleImages, ...chargeRedImages, ...chargeYellowImages, ...readyImages, ...respawnPointerImages, ...dragArrowImages, ...useNinjuImages, ...weaponImages, ...ougiImages, ...shootImages, ...ougiLockImages, ...deathImages, ...matchEndImages, ...fireToadImages, ...yashaoImages]);
 }
 
 function loadFrame(src, target, index) {
@@ -224,6 +264,18 @@ function loadFrame(src, target, index) {
     const img = new Image();
     img.onload = () => {
       target[index] = img;
+      resolve();
+    };
+    img.onerror = resolve;
+    img.src = src;
+  });
+}
+
+function loadEyeFrame(src, id, kind) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      eyeFrames[id][kind] = img;
       resolve();
     };
     img.onerror = resolve;
@@ -269,7 +321,7 @@ function makeUnit(id, name, team, x, y, weaponKey = defaultWeaponKey, controlMod
   const aiNextThink = controlMode === "player" ? 0 : performance.now() + 520 + Math.random() * 500;
   const storage = roomSlotKey ? storageForRoomSlotKey(roomSlotKey) : createDefaultPlayerStorage();
   const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
-  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, soulSteps: 0, exp: progression.exp, level: progression.level, rankTitle: progression.rankTitle, classBranch: storage.classBranch || "", gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", disabledUntil: 0, invincibleUntil: 0, moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
+  return { id, name, team, x, y, hp: hpMax, maxHp: hpMax, skill: maxSkill, ougi: 0, soulSteps: 0, exp: progression.exp, level: progression.level, rankTitle: progression.rankTitle, classBranch: storage.classBranch || "", gold: storage.gold || 0, items: { ...(storage.items || {}) }, itemSlots: [...(storage.itemSlots || [])], eyeStyle: normalizedEyeStyle(storage.eyeStyle), roomSlotKey, facing: team === "blue" ? "right" : "left", alive: true, moveT: 1, fromX: x, fromY: y, hitFlash: 0, respawning: false, respawnTipUntil: 0, aiNextThink, aiActionAt: 0, aiPlanKey: "", ninju: null, steelUntil: 0, hotBloodUntil: 0, buffAuraType: "", disabledUntil: 0, invincibleUntil: 0, moneyDart: null, fireToadFacing: "", fireToadTransformUntil: 0, fireToadTransformStartedAt: 0, fireToadUntil: 0, fireToadStartedAt: 0, fireToadDurationMs: 0, ninjuLockedUntil: 0, ougiCastUntil: 0, ougiCcUntil: 0, ougiInvincibleAt: 0, ougiInvincibleUntil: 0, weaponKey, controlMode, weaponReadyAt: 0, kills: 0, damageDone: 0, damageTaken: 0 };
 }
 
 function roomStorageKey(team, slot) {
@@ -277,7 +329,18 @@ function roomStorageKey(team, slot) {
 }
 
 function createDefaultPlayerStorage() {
-  return { exp: defaultPlayerExp, classBranch: "", gold: 0, items: {}, itemSlots: [] };
+  return { exp: defaultPlayerExp, classBranch: "", gold: 0, items: {}, itemSlots: [], ninjuLoadout: [...selectedNinjuLoadout], eyeStyle: defaultEyeStyle };
+}
+
+function normalizedEyeStyle(style) {
+  const value = String(style || defaultEyeStyle);
+  return eyeStyleIds.includes(value) ? value : defaultEyeStyle;
+}
+
+function eyeImagePath(style, facing = "front") {
+  const id = normalizedEyeStyle(style);
+  const folder = facing === "side" ? "eyes-look-right" : "eyes-middle";
+  return `assets/ninja-composite-parts/${folder}/${id}.png`;
 }
 
 function storageForRoomSlotKey(key) {
@@ -285,10 +348,13 @@ function storageForRoomSlotKey(key) {
   const storage = state.playerStorage[key];
   if (!storage.items) storage.items = {};
   if (!storage.itemSlots) storage.itemSlots = [];
+  if (!Array.isArray(storage.ninjuLoadout)) storage.ninjuLoadout = [...selectedNinjuLoadout];
   if (!Number.isFinite(Number(storage.exp))) storage.exp = defaultPlayerExp;
   storage.exp = Math.max(0, Math.floor(Number(storage.exp) || 0));
   storage.classBranch = storage.classBranch || "";
   storage.gold = Math.max(0, Math.floor(Number(storage.gold) || 0));
+  storage.eyeStyle = normalizedEyeStyle(storage.eyeStyle);
+  storage.ninjuLoadout = normalizedNinjuLoadout(storage.ninjuLoadout, { enforceAvailability: true, storage });
   return storage;
 }
 
@@ -300,6 +366,7 @@ function syncUnitStorage(unit) {
   storage.gold = Math.max(0, Math.floor(Number(unit.gold) || 0));
   storage.items = { ...(unit.items || {}) };
   storage.itemSlots = [...(unit.itemSlots || [])];
+  storage.eyeStyle = normalizedEyeStyle(unit.eyeStyle);
   refreshUnitProgression(unit);
   renderRoomInventoryPanel();
   updateRoomProgressionLabels();
@@ -442,6 +509,7 @@ function setupRoomSlots() {
         if (nameEl) nameEl.textContent = `${team}${slot}`;
         if (levelEl && progressionUiVisible) levelEl.textContent = formatProgressionLine(storage);
         if (controlEl) controlEl.value = "ai_beginner";
+        updateRoomEyeImages();
         renderRoomInventoryPanel();
       });
     }
@@ -456,7 +524,17 @@ function setupRoomSlots() {
   roomCardEls.forEach((card) => {
     if (card.classList.contains("active-slot")) storageForRoomSlotKey(roomStorageKey(card.dataset.team, Number(card.dataset.slot)));
   });
+  updateRoomEyeImages();
   updateRoomProgressionLabels();
+}
+
+function updateRoomEyeImages() {
+  roomCardEls.forEach((card) => {
+    const eyeEl = card.querySelector(".room-avatar-eye");
+    if (!eyeEl) return;
+    const storage = storageForRoomSlotKey(roomStorageKey(card.dataset.team, Number(card.dataset.slot)));
+    eyeEl.src = eyeImagePath(storage.eyeStyle);
+  });
 }
 
 function describeStoredItems(storage) {
@@ -763,8 +841,9 @@ function drawUnits() {
       const auraType = activeBuffAuraType(unit);
       if (auraType === "steel") drawSteelSpriteOutline(sprite, p, bob);
       if (auraType === "hotBlood") drawHotBloodSpriteOutline(sprite, p, bob);
-      ctx.drawImage(sprite, p.x - 31, p.y - 47 + bob, 62, 62);
-      drawUnitEyes(useNinjuSprite ? { ...unit, facing: "down" } : unit, p, bob);
+      const spriteBox = unitSpriteDrawBox(sprite, Boolean(useNinjuSprite));
+      ctx.drawImage(sprite, p.x - spriteBox.w / 2, p.y - 47 + bob, spriteBox.w, spriteBox.h);
+      if (!useNinjuSprite) drawUnitEyes(unit, p, bob);
     } else if (!ougiCast && !activeMoneyDartCast(unit)) {
       ctx.fillStyle = unit.team === "blue" ? "#5bb8ff" : "#b5b9b3";
       ctx.beginPath();
@@ -934,15 +1013,15 @@ function drawYashaoUnit(unit, p, now) {
     drawYashaoFxFrame(yashaoFrames.weaponFx[facing], p, now - action.startedAt, action.duration, 1.0);
   } else if (action?.type === "ougi") {
     frame = frameAt(yashaoFrames.ougi[action.slot] || [], now - action.startedAt, action.duration);
-    drawYashaoFxFrame(yashaoFrames.ougiFx[action.slot] || [], p, now - action.startedAt, action.duration, 0.72);
-    scale = 0.64;
+    drawYashaoFxFrame(yashaoFrames.ougiFx[action.slot] || [], p, now - action.startedAt, action.duration, 1.25);
+    scale = 1.25;
   } else if (unit.moveT < 1) {
     frame = frameAt(yashaoFrames.arrive[facing], unit.moveT, 1);
   }
 
   frame = frame || yashaoFrames.idle[facing]?.[0] || yashaoFrames.idle.down?.[0] || images.greyDown;
   if (!frame) return;
-  drawCenteredUnitFrame(frame, p.x, p.y - 14, 80, scale);
+  drawCenteredUnitFrame(frame, p.x, p.y - 14, 120, scale);
 }
 
 function activeYashaoAction(unit, now) {
@@ -958,7 +1037,7 @@ function activeYashaoAction(unit, now) {
 function drawYashaoFxFrame(frames, p, elapsed, duration, scaleMultiplier = 1) {
   const frame = frameAt(frames, elapsed, duration);
   if (!frame) return;
-  drawCenteredUnitFrame(frame, p.x, p.y - 18, 170, scaleMultiplier);
+  drawCenteredUnitFrame(frame, p.x, p.y - 18, 120, scaleMultiplier);
 }
 
 function frameAt(frames, elapsed, duration) {
@@ -1548,9 +1627,11 @@ function drawUnitEyes(unit, p, bob = 0) {
   const facing = unit.facing || "down";
   const offset = Object.prototype.hasOwnProperty.call(eyeOffsets, facing) ? eyeOffsets[facing] : eyeOffsets.down;
   if (!offset) return;
+  const eyeStyle = normalizedEyeStyle(unit.eyeStyle);
+  const eyeSet = eyeFrames[eyeStyle] || eyeFrames[defaultEyeStyle];
 
   if (facing === "left" || facing === "right") {
-    const sideEye = images.eyeSide || images.eyesFront;
+    const sideEye = eyeSet?.side || eyeSet?.front || images.eyeSide || images.eyesFront;
     if (!sideEye) return;
     ctx.save();
     if (facing === "left") {
@@ -1564,7 +1645,7 @@ function drawUnitEyes(unit, p, bob = 0) {
     return;
   }
 
-  const frontEyes = images.eyesFront;
+  const frontEyes = eyeSet?.front || images.eyesFront;
   if (!frontEyes) return;
   ctx.drawImage(frontEyes, p.x + offset.x, p.y + offset.y + bob, offset.w, offset.h);
 }
@@ -1614,8 +1695,8 @@ function drawDragArrow(from, to, direction, enough) {
 function drawNinjuEffects(now) {
   for (const unit of state.units) {
     if (!unit.alive) continue;
-    const p = unitPosition(unit);
-    if (isUnitCastingNinju(unit)) {
+    if (isUnitCastingNinju(unit) && shouldDrawNinjuCastEffect(unit.ninju.type)) {
+      const p = unitPosition(unit);
       const progress = Math.min(0.999, (now - unit.ninju.startedAt) / unit.ninju.duration);
       const frames = statusNinjuCastFrames(unit.ninju.type);
       const frame = frames[Math.floor(progress * frames.length)];
@@ -1631,6 +1712,10 @@ function drawNinjuEffects(now) {
   drawNinjuDamageEffects(now);
 }
 
+function shouldDrawNinjuCastEffect(type) {
+  return Boolean(specialNinjuConfigs[type] || attackNinjuConfigs[type] || type === "hotBlood" || type === "genki" || type === "kakki" || type === "shinki" || type === "steel" || type === "fireToad");
+}
+
 function statusNinjuCastFrames(type) {
   if (specialNinjuConfigs[type]) return specialNinjuFrames[type] || defUpFrames;
   if (type === "hotBlood") return atkUpFrames;
@@ -1643,6 +1728,11 @@ function statusNinjuCastFrames(type) {
 function ninjuDamageFrames(type) {
   if (specialNinjuConfigs[type]) return specialNinjuFrames[type] || [];
   if (typeof type === "string" && type.endsWith("Hit")) return specialNinjuHitFrames[type.slice(0, -3)] || [];
+  if (attackNinjuConfigs[type]?.hitFrames) return attackNinjuConfigs[type].hitFrames;
+  if (type === "steel") return defUpFrames;
+  if (type === "hotBlood") return atkUpFrames;
+  if (type === "genki") return regenHpSmallFrames;
+  if (type === "kakki" || type === "shinki") return regenHpLargeFrames;
   if (type === "flash") return smallThunderDamagedFrames;
   if (type === "wildfire") return smallFireDamagedFrames;
   if (type === "freeze") return smallIceDamagedFrames;
@@ -2099,6 +2189,11 @@ function useItemSlot(index) {
 }
 
 function useNinjuByType(type) {
+  if (!canEquipNinjuType(type)) {
+    const ninju = ninjuByType[type];
+    setMessage(ninju ? `${ninju.label}: ${ninjuAvailabilityReason(ninju)}` : "This jutsu is unavailable.");
+    return;
+  }
   if (type === "moneyDart") useMoneyDart();
   else if (type === "steel") useSteelNinju();
   else if (type === "hotBlood") useHotBloodNinju();
@@ -2108,6 +2203,7 @@ function useNinjuByType(type) {
   else if (type === "shinki") useShinkiNinju();
   else if (specialNinjuConfigs[type]) useSpecialNinju(type);
   else if (attackNinjuConfigs[type]) useAttackNinju(type);
+  else setMessage(`${ninjuByType[type]?.label || "This jutsu"} is loadout-only until its behavior is implemented.`);
 }
 
 function drawNinjuSlot(x, y, w, h, text, type) {
@@ -2185,7 +2281,7 @@ function currentNinjuSlotRects() {
 
 function currentNinjuButtonList() {
   const slots = currentNinjuSlotRects();
-  return selectedNinjuLoadout.map((type, index) => {
+  return currentProfileNinjuLoadout().map((type, index) => {
     if (!type || !ninjuByType[type]) return null;
     const source = slots[index] || slots[0];
     const ninju = ninjuByType[type];
@@ -2419,17 +2515,21 @@ function useWeaponOugi(slot) {
   unit.ougiInvincibleAt = unit.ougiCastUntil;
   unit.ougiInvincibleUntil = unit.ougiCastUntil + ougiPostInvincibleMs;
   clearDragState();
-  state.ougiCasts.push({
+  const cast = {
     unitId: unit.id,
     weaponKey: unit.weaponKey,
     slot: String(slot),
     direction: unit.facing || "down",
     startedAt: now,
     duration: definition.duration,
-  });
-  applyOugiDamage(unit, definition, slot);
+    damagedUnitIds: new Set(),
+  };
+  state.ougiCasts.push(cast);
+  cast.damagedUnitIds = applyOugiDamage(unit, definition, slot);
   playOugiSounds(definition);
-  setMessage(`${unit.name} used Ougi ${slot}.`);
+  setMessage(cast.damagedUnitIds.size > 0
+    ? `${unit.name} used Ougi ${slot} and hit ${cast.damagedUnitIds.size} target${cast.damagedUnitIds.size === 1 ? "" : "s"}.`
+    : `${unit.name} used Ougi ${slot}.`);
 }
 
 function playOugiSounds(definition) {
@@ -2453,9 +2553,11 @@ function playOugiSounds(definition) {
 function strongestReadyOugiSlot(unit) {
   syncOugiFromSpecialGauge(unit);
   const slots = ougiDefinitions[unit.weaponKey] || {};
-  for (const slot of [3, 2, 1]) {
+  const completedTier = Math.min(soulMaxLevel, Math.floor((unit?.soulSteps || 0) / soulStepsPerLevel));
+  const preferredSlot = Math.min(3, completedTier);
+  for (let slot = preferredSlot; slot >= 1; slot--) {
     const definition = slots[slot];
-    if (definition && (unit.soulSteps || 0) >= ougiCostToSpecialSteps(definition.cost)) return slot;
+    if (definition) return slot;
   }
   return 0;
 }
@@ -2470,42 +2572,94 @@ function useBestWeaponOugi() {
   }
   const slot = strongestReadyOugiSlot(unit);
   if (!slot) {
-    const firstOugi = ougiDefinitions[unit.weaponKey]?.[1];
-    const cost = firstOugi?.cost || Math.ceil(maxOugi / 3);
-    setMessage(`${unit.name}: Ougi needs ${cost} Ougi.`);
+    setMessage(`${unit.name}: Ougi needs at least soul tier 1.`);
     return;
   }
   useWeaponOugi(slot);
 }
 
 function applyOugiDamage(attacker, definition, slot) {
-  const cells = ougiAreaCells(attacker, slot);
-  const hitUnits = new Set();
-  const lockUnits = new Set();
+  const cells = ougiAreaCells(attacker, slot, definition);
+  const damagedUnitIds = new Set();
   for (const cell of cells) {
     const unit = unitAt(cell.x, cell.y);
     if (unit && unit.team !== attacker.team) {
-      if (attacker.weaponKey === "weapon19" && Number(slot) === 1) lockUnits.add(unit);
-      if (!isUnitInvincible(unit)) hitUnits.add(unit);
+      applyOugiHitToUnit(attacker, unit, definition, slot, damagedUnitIds);
     }
   }
-  lockUnits.forEach((unit) => applyOugiLockMarker(unit));
-  const damage = definition.damage || unitWeaponDamage(attacker);
-  hitUnits.forEach((unit) => {
-    damageUnit(unit, damage, `${attacker.name} hit ${unit.name} with Ougi ${slot}`, false, attacker, false, false);
-    if (unit.alive) applyOugiControlLock(unit);
-  });
+  return damagedUnitIds;
 }
 
-function ougiAreaCells(unit, slot) {
-  const dir = { name: unit.facing || "down", ...directionVector(unit.facing || "down") };
-  if (slot === 1) return forwardOugiCells(unit, dir, 5);
-  const radius = slot === 2 ? 2 : 3;
+function applyOugiHitToUnit(attacker, unit, definition, slot, damagedUnitIds) {
+  if (isOugiInvincible(unit)) return;
+  if (!damagedUnitIds.has(unit.id)) {
+    damagedUnitIds.add(unit.id);
+    damageUnit(unit, definition.damage || unitWeaponDamage(attacker), `${attacker.name} hit ${unit.name} with Ougi ${slot}`, true, attacker, false, false);
+  }
+  if (unit.alive) applyOugiControlLock(unit);
+}
+
+function ougiAreaCells(unit, slot, definition = null, facing = null) {
+  const direction = facing || unit.facing || "down";
+  const dir = { name: direction, ...directionVector(direction) };
+  const shape = definition?.rangeShape;
+  if (shape?.type === "line") return forwardOugiCells(unit, dir, shape.distance || 1);
+  if (shape?.type === "forwardRect") return forwardRectOugiCells(unit, dir, shape.distance || 1, shape.halfWidth || 0);
+  if (shape?.type === "square") return squareOugiCells(unit, shape.radius || 1);
+  if (shape?.type === "cross") return crossOugiCells(unit, shape.distance || 1);
+  if (shape?.type === "diamond") return diamondOugiCells(unit, shape.radius || 1);
+  if (Number(slot) === 1) return forwardOugiCells(unit, dir, 5);
+  return squareOugiCells(unit, Number(slot) === 2 ? 2 : 3);
+}
+
+function squareOugiCells(unit, radius) {
   const cells = [];
   for (let y = unit.y - radius; y <= unit.y + radius; y++) {
     for (let x = unit.x - radius; x <= unit.x + radius; x++) {
       if (x === unit.x && y === unit.y) continue;
       if (inside(x, y) && Math.max(Math.abs(x - unit.x), Math.abs(y - unit.y)) <= radius) cells.push({ x, y });
+    }
+  }
+  return cells;
+}
+
+function crossOugiCells(unit, distance) {
+  const cells = [];
+  const crossDirections = [
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 },
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+  ];
+  for (const dir of crossDirections) {
+    for (let step = 1; step <= distance; step++) {
+      const x = unit.x + dir.dx * step;
+      const y = unit.y + dir.dy * step;
+      if (inside(x, y)) cells.push({ x, y });
+    }
+  }
+  return cells;
+}
+
+function diamondOugiCells(unit, radius) {
+  const cells = [];
+  for (let y = unit.y - radius; y <= unit.y + radius; y++) {
+    for (let x = unit.x - radius; x <= unit.x + radius; x++) {
+      if (x === unit.x && y === unit.y) continue;
+      if (inside(x, y) && Math.abs(x - unit.x) + Math.abs(y - unit.y) <= radius) cells.push({ x, y });
+    }
+  }
+  return cells;
+}
+
+function forwardRectOugiCells(unit, dir, distance, halfWidth) {
+  const cells = [];
+  const perpendicular = dir.dx !== 0 ? { dx: 0, dy: 1 } : { dx: 1, dy: 0 };
+  for (let step = 1; step <= distance; step++) {
+    for (let side = -halfWidth; side <= halfWidth; side++) {
+      const x = unit.x + dir.dx * step + perpendicular.dx * side;
+      const y = unit.y + dir.dy * step + perpendicular.dy * side;
+      if (inside(x, y)) cells.push({ x, y });
     }
   }
   return cells;
@@ -2525,18 +2679,19 @@ function updateActiveOugiPathLocks() {
   const now = performance.now();
   if (!state.ougiCasts) return;
   for (const cast of state.ougiCasts) {
-    if (cast.weaponKey !== "weapon19" || Number(cast.slot) !== 1) continue;
     if (now - cast.startedAt >= cast.duration) continue;
     if (!cast.lockedUnitIds) cast.lockedUnitIds = new Set();
+    if (!cast.damagedUnitIds) cast.damagedUnitIds = new Set();
     const caster = state.units.find((unit) => unit.id === cast.unitId && unit.alive);
     if (!caster) continue;
+    const definition = ougiDefinitions[cast.weaponKey]?.[cast.slot];
+    if (!definition) continue;
     const facing = cast.direction || caster.facing || "down";
-    const dir = { name: facing, ...directionVector(facing) };
-    for (const cell of forwardOugiCells(caster, dir, 5)) {
+    for (const cell of ougiAreaCells(caster, cast.slot, definition, facing)) {
       const unit = unitAt(cell.x, cell.y);
-      if (!unit || unit.team === caster.team || !unit.alive || cast.lockedUnitIds.has(unit.id)) continue;
+      if (!unit || unit.team === caster.team || !unit.alive) continue;
       cast.lockedUnitIds.add(unit.id);
-      applyOugiControlLock(unit);
+      applyOugiHitToUnit(caster, unit, definition, cast.slot, cast.damagedUnitIds);
     }
   }
 }
@@ -2584,7 +2739,6 @@ function drawOugiAnimations(now) {
       ctx.globalAlpha = progress < 0.9 ? 0.96 : Math.max(0, (1 - progress) / 0.1);
       drawOugiLayerFrame(effectFrames, progress, p, definition, cast);
       drawOugiLayerFrame(bodyFrames, progress, p, definition, cast, "body", unit);
-      drawOugiUnitEyes(unit, cast.direction, p);
       drawOugiLayerFrame(fxFrames, progress, p, definition, cast);
     } catch (error) {
       drawOugiFallbackPulse(p, progress, definition);
@@ -2594,24 +2748,25 @@ function drawOugiAnimations(now) {
   }
 }
 
-function drawOugiUnitEyes(unit, direction, p) {
-  if (!unit || !p) return;
-  drawUnitEyes({ ...unit, facing: direction || unit.facing || "down" }, p, 0);
-}
-
 function drawOugiLayerFrame(frames, progress, p, definition, cast = null, layer = "effect", unit = null) {
   if (!frames || frames.length === 0) return;
   let frame = frames[Math.min(frames.length - 1, Math.floor(progress * frames.length))];
   if (!frame) return;
   if (layer === "body") frame = teamOugiBodyFrame(frame, unit?.team);
   const scale = Math.min(1, definition.maxSize / Math.max(frame.width, frame.height));
-  if (cast?.weaponKey === "weapon20" || (cast?.weaponKey === "weapon19" && Number(cast.slot) === 3)) {
+  if (shouldCenterOugiFrame(cast)) {
     drawCenteredOugiFrame(frame, p, scale, centeredOugiOffset(cast.direction));
     return;
   }
   const w = frame.width * scale;
   const h = frame.height * scale;
   ctx.drawImage(frame, p.x - w / 2, p.y - h / 2 - 18, w, h);
+}
+
+function shouldCenterOugiFrame(cast) {
+  if (!cast?.weaponKey) return false;
+  if (cast.weaponKey === "weapon20" || (cast.weaponKey === "weapon19" && Number(cast.slot) === 3)) return true;
+  return /^(weapon1|weapon5|weapon6|weapon7|weapon8|weapon10|weapon11|weapon12|weapon13|weapon14|weapon15|weapon16)$/.test(cast.weaponKey);
 }
 
 function teamOugiBodyFrame(frame, team) {
@@ -2739,11 +2894,15 @@ function unitSprite(unit) {
 
 function unitUseNinjuSprite(unit) {
   if (!isUnitCastingNinju(unit)) return null;
-  if (unit.ninju?.type === "fireToad") return null;
   const frames = useNinjuFrames[unit.team] || [];
   if (!frames.length) return null;
   const progress = Math.min(0.999, Math.max(0, (performance.now() - unit.ninju.startedAt) / unit.ninju.duration));
   return frames[Math.floor(progress * frames.length)] || null;
+}
+
+function unitSpriteDrawBox(sprite, preserveAspect = false) {
+  if (!preserveAspect || !sprite?.width || !sprite?.height) return { w: 62, h: 62 };
+  return { w: sprite.width, h: sprite.height };
 }
 
 function updateFacing(unit, target) {
@@ -2955,8 +3114,10 @@ function toggleRuleMode() {
 
 function openNinjuEditor() {
   if (!ninjuEditorEl) return;
-  editNinjuDraft = [...selectedNinjuLoadout];
+  editNinjuDraft = [...currentProfileNinjuLoadout()];
   editNinjuSlotIndex = 0;
+  editEyeStyleDraft = normalizedEyeStyle(currentNinjuProfileStorage().eyeStyle);
+  setNinjuEditorMode("ninju");
   renderNinjuEditorProfile();
   renderNinjuEditor();
   ninjuEditorEl.hidden = false;
@@ -2967,8 +3128,12 @@ function closeNinjuEditor() {
 }
 
 function saveNinjuEditor() {
-  selectedNinjuLoadout = normalizedNinjuLoadout(editNinjuDraft);
+  const storage = currentNinjuProfileStorage();
+  selectedNinjuLoadout = normalizedNinjuLoadout(editNinjuDraft, { enforceAvailability: true, storage });
+  storage.ninjuLoadout = [...selectedNinjuLoadout];
+  storage.eyeStyle = normalizedEyeStyle(editEyeStyleDraft);
   window.localStorage.setItem(ninjuLoadoutStorageKey, JSON.stringify(selectedNinjuLoadout));
+  updateRoomEyeImages();
   closeNinjuEditor();
 }
 
@@ -2984,18 +3149,70 @@ function loadSavedNinjuLoadout() {
   return [...defaultNinjuLoadout];
 }
 
-function normalizedNinjuLoadout(loadout) {
-  return Array.from({ length: 6 }, (_, index) => (ninjuByType[loadout[index]] ? loadout[index] : null));
+function normalizedNinjuLoadout(loadout, options = {}) {
+  return Array.from({ length: 6 }, (_, index) => {
+    const type = loadout[index];
+    if (!ninjuByType[type]) return null;
+    if (options.enforceAvailability && !canEquipNinjuType(type, options.storage)) return null;
+    return type;
+  });
+}
+
+function currentNinjuProfileStorage() {
+  return storageForRoomSlotKey(roomStorageKey("blue", 1));
+}
+
+function currentProfileNinjuLoadout() {
+  const storage = currentNinjuProfileStorage();
+  storage.ninjuLoadout = normalizedNinjuLoadout(storage.ninjuLoadout, { enforceAvailability: true, storage });
+  return storage.ninjuLoadout;
+}
+
+function ninjuUnlockRequirement(ninju) {
+  return ninjutsuUnlockByName[ninju?.unlockName || ninju?.label] || null;
+}
+
+function isNinjuUnlockedForStorage(ninju, storage = currentNinjuProfileStorage()) {
+  if (ninjuTestingFullAccess) return Boolean(ninju);
+  if (!ninju) return false;
+  const unlock = ninjuUnlockRequirement(ninju);
+  if (!unlock) return false;
+  const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
+  if (progression.level < unlock.level) return false;
+  return !unlock.branch || storage.classBranch === unlock.branch;
+}
+
+function canEquipNinjuType(type, storage = currentNinjuProfileStorage()) {
+  const ninju = ninjuByType[type];
+  if (ninjuTestingFullAccess) return Boolean(ninju);
+  return Boolean(ninju?.implemented && isNinjuUnlockedForStorage(ninju, storage));
+}
+
+function ninjuAvailabilityReason(ninju, storage = currentNinjuProfileStorage()) {
+  if (!ninju) return "Unknown jutsu.";
+  if (ninjuTestingFullAccess && !ninju.implemented) return "Available for loadout testing; behavior is not implemented yet.";
+  if (ninjuTestingFullAccess) return "";
+  if (!ninju.implemented) return "Not implemented yet.";
+  const unlock = ninjuUnlockRequirement(ninju);
+  if (!unlock) return "No unlock rule yet.";
+  const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
+  if (progression.level < unlock.level) return `Unlocks at level ${unlock.level}.`;
+  if (unlock.branch && storage.classBranch !== unlock.branch) return `${unlock.branch} only.`;
+  return "";
 }
 
 function resetNinjuEditorLoadout() {
+  if (ninjuEditorMode === "eyes") {
+    editEyeStyleDraft = defaultEyeStyle;
+    renderNinjuEditor();
+    return;
+  }
   editNinjuDraft = Array(6).fill(null);
   editNinjuSlotIndex = 0;
   renderNinjuEditor();
 }
 
 function renderNinjuEditorProfile() {
-  if (!progressionUiVisible) return;
   const storage = storageForRoomSlotKey(roomStorageKey("blue", 1));
   const progression = progressionSummaryForExp(storage.exp, storage.classBranch);
   if (ninjuEditorLevelEl) ninjuEditorLevelEl.textContent = String(progression.level);
@@ -3005,6 +3222,11 @@ function renderNinjuEditorProfile() {
 function renderNinjuEditor() {
   if (!ninjuEditorSlotsEl || !ninjuEditorListEl) return;
   renderNinjuEditorProfile();
+  if (ninjuEditorMode === "eyes") {
+    renderEyeEditor();
+    return;
+  }
+  if (ninjuEditorEl) ninjuEditorEl.dataset.mode = "ninju";
   ninjuEditorSlotsEl.innerHTML = "";
   for (let i = 0; i < 6; i++) {
     const type = editNinjuDraft[i];
@@ -3024,14 +3246,24 @@ function renderNinjuEditor() {
 
   ninjuEditorListEl.innerHTML = "";
   for (const ninju of ninjuEditorCatalog) {
+    const storage = currentNinjuProfileStorage();
+    const available = canEquipNinjuType(ninju.type, storage);
+    const reason = ninjuAvailabilityReason(ninju, storage);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `ninju-option ${ninju.group}${editNinjuDraft.includes(ninju.type) ? " selected" : ""}`;
+    button.disabled = !available;
+    button.className = `ninju-option ${ninju.group}${editNinjuDraft.includes(ninju.type) ? " selected" : ""}${!available ? " locked" : ""}${!ninju.implemented ? " unimplemented" : ""}`;
     button.dataset.ninjuType = ninju.type;
     button.dataset.editorRow = ninju.editorRow;
-    button.style.setProperty("--editor-order", ninju.editorOrder);
+    const editorColumn = ((ninju.editorOrder - 1) % 8) + 1;
+    const editorSubrow = Math.floor((ninju.editorOrder - 1) / 8);
+    const editorRowBase = ninjuEditorRowOrder[ninju.editorRow] || 1;
+    button.style.setProperty("--editor-order", editorColumn);
+    button.style.gridRow = String(editorRowBase + editorSubrow);
     button.textContent = ninju.label;
+    if (reason) button.title = reason;
     button.addEventListener("click", () => {
+      if (!available) return;
       const existingIndex = editNinjuDraft.indexOf(ninju.type);
       if (existingIndex >= 0) editNinjuDraft[existingIndex] = null;
       const targetIndex = editNinjuSlotIndex >= 0 && editNinjuSlotIndex < 6 ? editNinjuSlotIndex : editNinjuDraft.findIndex((type) => !type);
@@ -3039,6 +3271,42 @@ function renderNinjuEditor() {
       editNinjuDraft[targetIndex] = ninju.type;
       const nextEmptyIndex = editNinjuDraft.findIndex((type) => !type);
       editNinjuSlotIndex = nextEmptyIndex >= 0 ? nextEmptyIndex : targetIndex;
+      renderNinjuEditor();
+    });
+    ninjuEditorListEl.appendChild(button);
+  }
+}
+
+function setNinjuEditorMode(mode) {
+  ninjuEditorMode = mode === "eyes" ? "eyes" : "ninju";
+  if (ninjuEditorEl) ninjuEditorEl.dataset.mode = ninjuEditorMode;
+  ninjuEditorTabEls.forEach((tab) => {
+    const label = tab.textContent.trim().toLowerCase();
+    const active = (ninjuEditorMode === "eyes" && label === "eyes") || (ninjuEditorMode === "ninju" && label === "ninju");
+    tab.classList.toggle("active", active);
+  });
+}
+
+function renderEyeEditor() {
+  setNinjuEditorMode("eyes");
+  ninjuEditorSlotsEl.innerHTML = "";
+  const preview = document.createElement("div");
+  preview.className = "eye-editor-preview";
+  preview.innerHTML = `
+    <img class="eye-editor-preview-avatar" src="assets/room-ui-selected/b_team.png" alt="">
+    <img class="eye-editor-preview-eyes" src="${eyeImagePath(editEyeStyleDraft)}" alt="">
+  `;
+  ninjuEditorSlotsEl.appendChild(preview);
+
+  ninjuEditorListEl.innerHTML = "";
+  for (const id of eyeStyleIds) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `eye-option${id === editEyeStyleDraft ? " selected" : ""}`;
+    button.title = `Eyes ${id}`;
+    button.style.backgroundImage = `url("${eyeImagePath(id)}")`;
+    button.addEventListener("click", () => {
+      editEyeStyleDraft = id;
       renderNinjuEditor();
     });
     ninjuEditorListEl.appendChild(button);
@@ -3057,6 +3325,14 @@ setupRoomSlots();
 renderRoomInventoryPanel();
 if (battleStartBtn) battleStartBtn.addEventListener("click", startBattleFromRoom);
 if (teamEditBtn) teamEditBtn.addEventListener("click", openNinjuEditor);
+ninjuEditorTabEls.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const label = tab.textContent.trim().toLowerCase();
+    if (label === "eyes") setNinjuEditorMode("eyes");
+    else if (label === "ninju") setNinjuEditorMode("ninju");
+    renderNinjuEditor();
+  });
+});
 if (ninjuEditorResetBtn) ninjuEditorResetBtn.addEventListener("click", resetNinjuEditorLoadout);
 if (ninjuEditorCancelBtn) ninjuEditorCancelBtn.addEventListener("click", closeNinjuEditor);
 if (ninjuEditorSaveBtn) ninjuEditorSaveBtn.addEventListener("click", saveNinjuEditor);

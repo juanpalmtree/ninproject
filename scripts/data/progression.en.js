@@ -66,7 +66,7 @@ const ninjutsuUnlocks = [
   { level: 79, name: "Freeze" },
   { level: 81, name: "Yasha" },
   { level: 84, name: "Kinton" },
-  { level: 87, name: "Thounderbolt" },
+  { level: 87, name: "Thunderbolt" },
   { level: 91, name: "Storm" },
   { level: 94, name: "Seven" },
   { level: 98, name: "IceArrow" },

@@ -1,85 +1,58 @@
-# 忍豆風雲 2 Offline Prototype
+# Nindou 2 Offline Prototype
 
-這是用 HTML Canvas + JavaScript 製作的《忍豆風雲 2》單機原型。目標是先做出「絕命指令」風格的 2D 格子制戰鬥：玩家控制 Blue 1，其餘角色由簡單 AI 操控，分成 blue / grey 兩隊，擊倒敵隊後進入結算畫面。
+This folder contains project notes for the English offline Nindou 2 prototype.
 
-## 如何啟動
-
-直接用瀏覽器打開：
+The playable entry point is:
 
 ```text
-C:\Users\lane6\Documents\Codex\2026-05-03\2-c-users-lane6-onedrive-desktop\game.html
+game.en.html
 ```
 
-主要檔案：
+## How To Run
 
-- `game.html`：房間畫面、Canvas、音量滑桿。
-- `style.css`：房間畫面 DOM UI 外觀。
-- `game.js`：遊戲邏輯、繪圖、輸入、AI、武器、忍術、音效。
-- `assets/`：地圖、角色、武器、忍術、音效、房間 UI 等素材。
+Open `game.en.html` in a browser, or serve the repository with any static file server and open the local URL.
 
-## 目前玩法
-
-- 起始畫面是房間，大廳 BGM 使用 `assets/audio/lobby.mp3`。
-- 按「戰鬥開始」進入戰鬥，地圖 BGM 使用 `assets/audio/bgm.mp3`。
-- 結算畫面出現後停止地圖 BGM。
-- 玩家只控制 `Blue 1`，其他 5 隻角色是 AI。
-- 角色 HP 300，技最大 18，起始技為滿。
-- 長按自己的角色會集技，滑鼠拖曳後放開消耗技移動。
-- 移動只能直向，不能斜角；若滑鼠偏斜，會依角度判斷主要方向。
-- 移動不能穿過障礙物；如果技不足，會走到技量可到的最遠格。
-- 碰撞敵人會讓敵人消失並扣 50 血，3 秒後隨機重生。
-- 結算畫面包含遊戲時間、每個角色殺敵數、造成傷害、承受傷害。
-
-## 座標系
-
-玩家理解用座標：
-
-- 左下角玩家可走第一格是 `[1,1]`。
-- 往右是 `[2,1]`。
-- 往上是 `[1,2]`。
-
-內部 Canvas 格子仍是陣列座標，`game.js` 裡用 `displayCellCoord()` 和 `internalCellCoord()` 做轉換。調地圖物件時請確認自己是在改「玩家座標」還是「內部座標」。
-
-## 武器
-
-目前玩家武器是：
-
-```text
-assets/weapon/3忍太刀
-```
-
-規則：
-
-- 傷害 50。
-- 冷卻 1000ms，最快 1 秒攻擊一次。
-- 揮砍動畫持續 1000ms。
-- 攻擊範圍是 AOE，範圍內所有敵人與可破壞物件都會被打到。
-- 上 / 下：角色前方橫向 3 格。
-- 左 / 右：角色側邊直向 2 格。
-- 無敵敵人不受傷，但不會阻擋其他 AOE 目標。
-
-注意：`drawKunaiAttackFrame()` 和 `drawKunaiHandAttackFrame()` 裡的 offsets 是人工校準過的位置。除非使用者明確要求，不要改這些常數。
-
-## 忍術
-
-目前已做：
-
-- 鋼鐵：消耗 7 技，施放期間無敵，施放完成後 12 秒內防禦力係數 1.7，傷害以 `baseDamage / 1.7` 計算。連續施放會重新扣技、排施放動作，效果時間刷新到最多 12 秒，不堆疊超過 12 秒。
-- 錢鏢：按下後約 0.3 秒無敵且不能丟，之後點上下左右方向射出。傷害 70，距離無限，但會被障礙物擋住，不會被隊友擋住。
-
-## 音效與音量
-
-- 房間左下角有音樂 / 音效滑桿。
-- 音樂滑桿同時控制房間 BGM 和地圖 BGM。
-- 音效滑桿控制 `sounds` 內所有短音效。
-- 多數音效在 `assets/sfx/`。
-
-## 驗證
-
-修改 JavaScript 後至少執行：
+Example:
 
 ```powershell
-node --check .\game.js
+npx serve .
 ```
 
-若改 UI 或 Canvas 視覺，建議用瀏覽器打開 `game.html` 實際看畫面。
+## Main Files
+
+- `game.en.html` - English room screen, canvas, HUD, and controls.
+- `game.en.js` - main game loop, drawing, input, room flow, HUD, and asset loading.
+- `style.css` - room UI and page styling.
+- `scripts/data/assets.js` - image and sound asset paths.
+- `scripts/data/config.js` - shared gameplay constants.
+- `scripts/data/weapons.en.js` - English weapon definitions and Ougi data.
+- `scripts/data/progression.en.js` - English rank, class, level, and unlock data.
+- `scripts/systems/combat.js` - weapon attacks, damage, object damage, and Ougi combat behavior.
+- `scripts/systems/movement.js` - movement, collision, respawns, and Fire Toad movement rules.
+- `scripts/systems/ninjutsu.js` - ninjutsu casting, buffs, attack jutsus, summons, and transformations.
+- `scripts/systems/ai.js` - AI behavior.
+- `scripts/systems/match.js` - match lifecycle, death handling, and result handling.
+
+## Current Gameplay Notes
+
+- The room supports Blue and Grey teams.
+- Players can equip weapons, items, eyes, and ninjutsu from the room editor.
+- The shared special/Ougi gauge drives weapon Ougi tiers and attack/summon jutsu strength.
+- Ougi selection is tier based: tier 1 casts Ougi 1, tier 2 casts Ougi 2, and tier 3 or 4 casts Ougi 3.
+- Butsumetsu kills enemies in range immediately, then kills the caster shortly after.
+- Some assets are imported from original Nindou-style SWF exports and are stored under `assets/`.
+
+## Development Notes
+
+- Keep user-facing text in English.
+- Prefer `game.en.html`, `game.en.js`, and `scripts/data/weapons.en.js` for the English prototype.
+- Keep new playable assets inside `assets/`.
+- Avoid committing local scratch exports unless the game references them directly.
+- After editing JavaScript, run syntax checks when possible:
+
+```powershell
+node --check game.en.js
+node --check scripts/systems/combat.js
+node --check scripts/systems/movement.js
+node --check scripts/systems/ninjutsu.js
+```

@@ -1,5 +1,5 @@
 // ===== Match Flow =====
-// 檢查任一隊全滅並觸發結算。
+// Checks whether either team is eliminated and queues the result.
 function checkVictory() {
   if (state.result || state.pendingResult) return;
   const blueLeft = state.units.some((u) => u.team === "blue" && (u.alive || u.respawning));
@@ -54,7 +54,7 @@ function queueMatchFinish(winner) {
   state.gameOver = true;
   state.pendingResult = {
     winner,
-    finishAt: now + deathSkullAnimationMs,
+    finishAt: Math.max(now + deathSkullAnimationMs, activeOugiFinishAt(now)),
   };
   clearDragState();
   setMessage(winner === "blue" ? "Victory incoming." : "Defeat incoming.");
@@ -62,13 +62,24 @@ function queueMatchFinish(winner) {
 
 function updatePendingMatchResult(now) {
   if (!state.pendingResult || state.result) return;
+  state.pendingResult.finishAt = Math.max(state.pendingResult.finishAt || 0, activeOugiFinishAt(now));
   if (now < state.pendingResult.finishAt) return;
   const winner = state.pendingResult.winner;
   state.pendingResult = null;
   finishMatch(winner);
 }
 
-// 結束比賽、記錄時間並播放勝敗音效。
+function activeOugiFinishAt(now = performance.now()) {
+  if (!Array.isArray(state.ougiCasts)) return 0;
+  return state.ougiCasts.reduce((latest, cast) => {
+    const duration = Number(cast.duration) || 0;
+    const startedAt = Number(cast.startedAt) || 0;
+    const finishAt = startedAt + duration;
+    return finishAt > now ? Math.max(latest, finishAt) : latest;
+  }, 0);
+}
+
+// Ends the match, records time, and plays result audio.
 function finishMatch(winner) {
   const now = performance.now();
   state.gameOver = true;

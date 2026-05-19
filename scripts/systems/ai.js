@@ -54,7 +54,7 @@ function isMoneyDartFocusedAi(unit) {
   return unit?.controlMode === "ai_money_dart_master" || unit?.controlMode === "ai_dart_only_master";
 }
 
-// 更新電腦角色的判斷、攻擊、移動與脫困行為。
+// Updates AI decisions, attacks, movement, and escape behavior.
 function updateAi(dt, now) {
   if (state.gameOver) return;
 
@@ -105,14 +105,14 @@ function updateAi(dt, now) {
     unit.aiActionAt = 0;
 
     if (unit.controlMode === "ai_dart_only_master") {
-      // 尬鏢神人：不近戰、不撞人、不用武器，只追線丟錢鏢。
+      // Dart-only master: no melee, no bumps, no weapons; only lines up Koban throws.
       const acted = aiStepToMoneyDartLine(unit, target) || aiPathMoveToward(unit, target) || aiStepToward(unit, target) || aiRandomMove(unit);
       if (!acted) aiBreakOut(unit, target);
       unit.aiNextThink = Math.max(unit.aiNextThink, now + profile.thinkMinMs + Math.random() * profile.thinkRandMs);
       continue;
     }
 
-    // 錢鏢神人：先優先走到可直線命中的位置，再進入一般近戰行為。
+    // Money Dart master: first tries to line up a clear shot, then falls back to melee behavior.
     if (unit.controlMode === "ai_money_dart_master" && !unit.moneyDart && !aiMoneyDartAimCell(unit)) {
       if (aiStepToMoneyDartLine(unit, target)) {
         unit.aiNextThink = Math.max(unit.aiNextThink, now + profile.thinkMinMs + Math.random() * profile.thinkRandMs);
@@ -218,12 +218,12 @@ function triggerYashaoOugi(unit, slot, now) {
   setMessage(`${unit.name} used Yashao Ougi ${slot}.`);
 }
 
-// 依照距離計算 AI 反應時間，越遠反應越慢。
+// Calculates AI reaction time by distance; farther targets produce slower reactions.
 function aiReactionDelay(distance, multiplier = 1) {
   return (400 + Math.max(1, distance) * 100 + Math.random() * 180) * multiplier;
 }
 
-// 找出離自己最近的敵方角色。
+// Finds the nearest enemy unit.
 function nearestEnemy(unit, enemyTeam) {
   let best = null;
   let bestDist = Infinity;
@@ -239,7 +239,7 @@ function nearestEnemy(unit, enemyTeam) {
   return best;
 }
 
-// 讓 AI 消耗技移動到指定格子。
+// Moves an AI unit to a target cell while spending SP.
 function aiMoveUnit(unit, cell) {
   if (isUnitDisabled(unit)) return false;
   if (isUnitCastingNinju(unit)) return false;
@@ -269,7 +269,7 @@ function aiMoveUnit(unit, cell) {
   return true;
 }
 
-// 計算 AI 往目標靠近時下一步可走格。
+// Chooses the next walkable cell while the AI approaches a target.
 function aiStepToward(unit, target) {
   const options = [];
   const maxSteps = Math.max(1, Math.min(3, Math.floor(unit.skill)));
@@ -297,7 +297,7 @@ function aiStepToward(unit, target) {
   return false;
 }
 
-// 以 BFS 找繞路下一步，避免在障礙旁左右抖動。
+// Uses BFS to find a detour step and avoid jittering beside obstacles.
 function aiPathMoveToward(unit, target) {
   const nextCell = aiPathNextCell(unit, target);
   if (!nextCell) return false;
@@ -363,7 +363,7 @@ function aiPathNextCell(unit, target) {
   return chosen;
 }
 
-// 讓 AI 在可走方向中隨機移動。
+// Moves the AI randomly among walkable directions.
 function aiRandomMove(unit) {
   const options = [];
   const maxSteps = Math.max(1, Math.min(2, Math.floor(unit.skill)));
@@ -378,7 +378,7 @@ function aiRandomMove(unit) {
   return false;
 }
 
-// AI 被草或障礙困住時，嘗試揮砍旁邊物件脫困。
+// Lets AI slash nearby objects when grass or obstacles trap it.
 function aiBreakOut(unit, target) {
   if (!weaponIsReady(unit)) {
     unit.aiNextThink = performance.now() + 80;
@@ -449,7 +449,7 @@ function tryAiNinjutsu(unit, profile, now) {
     return true;
   }
 
-  // 只有有直線可命中的敵人時才準備錢鏢，避免拿了就亂丟。
+  // Only ready Koban when an enemy can be hit in a clear line.
   if (Math.random() < profile.moneyDartReadyChance && (!isMoneyDartFocusedAi(unit) ? aiMoneyDartAimCell(unit) : aiCanStartMoneyDartAfterLineDelay(unit, now))) {
     if (isMoneyDartFocusedAi(unit)) unit.moneyDartLineSince = 0;
     startMoneyDart(unit, now, true);
@@ -470,10 +470,10 @@ function aiCanStartMoneyDartAfterLineDelay(unit, now) {
 function tryAiThrowMoneyDart(unit, profile, now) {
   if (!unit.moneyDart || now < unit.moneyDart.invincibleUntil || isUnitCastingNinju(unit)) return false;
 
-  // 手持錢鏢後，AI 一旦可丟就立刻丟，不再等機率。
+  // Once holding Koban, throw as soon as a shot is available.
   const aimCell = aiMoneyDartAimCell(unit);
   if (!aimCell) {
-    // 目標不在直線時取消手持，回到移動找線。
+    // Cancel the held dart when the target is no longer lined up.
     unit.moneyDart = null;
     return false;
   }
@@ -481,7 +481,7 @@ function tryAiThrowMoneyDart(unit, profile, now) {
   return true;
 }
 
-// AI 錢鏢瞄準：只對同列/同行且中間無阻擋的敵人出手，優先最近目標。
+// AI Koban aim: only throws at enemies in the same row/column with no blockers, preferring the nearest target.
 function aiMoneyDartAimCell(unit) {
   const enemyTeam = unit.team === "blue" ? "grey" : "blue";
   const dirs = [
@@ -514,7 +514,7 @@ function aiMoneyDartAimCell(unit) {
   return best ? best.cell : null;
 }
 
-// 錢鏢神人走位：往「能和目標同列/同行且可直線命中」的格子靠。
+// Money Dart master positioning: moves toward cells that line up a clear row/column shot.
 function aiStepToMoneyDartLine(unit, target) {
   const options = [];
   const maxSteps = Math.max(1, Math.min(3, Math.floor(unit.skill)));
