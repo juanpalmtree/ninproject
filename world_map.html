@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nindou World Map</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #111;
+      color: #fff;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, sans-serif;
+    }
+
+    .world-map-screen {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      overflow: hidden;
+      background: #05080a;
+    }
+
+    .vector-layer,
+    .map-image {
+      position: absolute;
+      display: block;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .map-image {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 2;
+    }
+
+    .location-readout {
+      position: absolute;
+      left: 12px;
+      top: 13px;
+      z-index: 4;
+      min-width: 220px;
+      padding: 8px 12px;
+      border: 3px solid #151313;
+      border-radius: 9px 9px 9px 4px;
+      background: linear-gradient(90deg, rgba(255, 214, 235, .95), rgba(221, 240, 251, .95));
+      color: #151010;
+      font-weight: 900;
+      box-shadow: 0 2px 0 rgba(255, 255, 255, .38) inset, 0 2px 0 rgba(0, 0, 0, .32);
+    }
+
+    .location-readout span {
+      margin-right: 12px;
+      color: #151010;
+      font-size: 15px;
+    }
+
+    .location-readout strong {
+      color: #d9412e;
+      font-size: 20px;
+      text-shadow: 1px 1px 0 #fff5ec, 0 0 5px rgba(180, 42, 30, .45);
+    }
+
+    .location-zone {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: var(--h);
+      z-index: 5;
+      border: 0;
+      border-radius: 8px;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .location-zone:hover,
+    .location-zone:focus-visible {
+      outline: 3px solid rgba(255, 246, 99, .95);
+      outline-offset: 2px;
+      background: rgba(255, 246, 99, .12);
+    }
+
+    .toast {
+      position: absolute;
+      left: 50%;
+      bottom: 28px;
+      z-index: 8;
+      max-width: 420px;
+      padding: 10px 14px;
+      border: 2px solid rgba(255, 246, 99, .9);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, .78);
+      color: #fff6a5;
+      font-size: 15px;
+      font-weight: 900;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity .18s;
+      pointer-events: none;
+    }
+
+    .toast.active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <main class="world-map-screen" aria-label="World map">
+    <img
+      class="vector-layer"
+      src="assets/runtime/ui_vectors/lobbies/shapes/1.2.svg"
+      alt=""
+      style="top: -75px; left: 28.5px; width: 818.5px; height: 624px; z-index: 0;"
+    >
+    <img
+      class="vector-layer"
+      src="assets/runtime/ui_vectors/lobbies/shapes/683.svg"
+      alt=""
+      style="top: -3px; left: -3px; width: 802px; height: 603px; z-index: 1;"
+    >
+    <img class="map-image" src="assets/ui/map/nekomata-map-cropped.png" alt="Nekomata map">
+    <div class="location-readout" aria-live="polite">
+      <span>Location Sushi</span>
+      <strong id="mapLocationName">Nekomata</strong>
+    </div>
+    <div id="locationZones" aria-label="Map locations"></div>
+    <div id="mapToast" class="toast" role="status" aria-live="polite">Zone locked in current prototype</div>
+  </main>
+
+  <script>
+    const locations = [
+      { key: "haguro", label: "Haguro", x: 13.2, y: 18.2, w: 15.6, h: 10.2 },
+      { key: "biwa", label: "Biwa", x: 4.5, y: 40.6, w: 15.4, h: 9.8 },
+      { key: "naniwa", label: "Naniwa", x: 25.4, y: 60.8, w: 16.4, h: 10.4 },
+      { key: "iga", label: "IGA", x: 47.5, y: 72.2, w: 16.2, h: 10.4, action: "villageHall" },
+      { key: "kouga", label: "Kouga", x: 65.4, y: 36.8, w: 15.8, h: 10.4 },
+      { key: "zizou-park", label: "Zizou Park", x: 35.5, y: 13.2, w: 15.2, h: 7.5 },
+      { key: "meow-market", label: "Meow Market", x: 44.6, y: 23.5, w: 16.6, h: 7.5 },
+      { key: "issun-mall", label: "Issun Mall", x: 80.8, y: 30.4, w: 17.4, h: 8 },
+      { key: "monkey-spring", label: "Monkey Spring", x: 55.8, y: 44.1, w: 17.6, h: 7.5 },
+      { key: "milk-beach", label: "Milk Beach", x: 3.5, y: 72.7, w: 12.6, h: 8.2 },
+      { key: "breeze-ridge", label: "Breeze Ridge", x: 84.5, y: 70.8, w: 14.2, h: 8.2 },
+    ];
+    const mapLocationName = document.querySelector("#mapLocationName");
+    const locationZones = document.querySelector("#locationZones");
+    const mapToast = document.querySelector("#mapToast");
+    let toastTimeout = null;
+
+    function showLockedToast() {
+      console.log("Zone locked in current prototype");
+      mapToast.classList.add("active");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => mapToast.classList.remove("active"), 1200);
+    }
+
+    function renderLocationZones() {
+      locationZones.innerHTML = "";
+      locations.forEach((location) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "location-zone";
+        button.style.setProperty("--x", `${location.x}%`);
+        button.style.setProperty("--y", `${location.y}%`);
+        button.style.setProperty("--w", `${location.w}%`);
+        button.style.setProperty("--h", `${location.h}%`);
+        button.setAttribute("aria-label", location.label);
+        button.addEventListener("mouseenter", () => {
+          mapLocationName.textContent = location.label;
+        });
+        button.addEventListener("focus", () => {
+          mapLocationName.textContent = location.label;
+        });
+        button.addEventListener("mouseleave", () => {
+          mapLocationName.textContent = "Nekomata";
+        });
+        button.addEventListener("blur", () => {
+          mapLocationName.textContent = "Nekomata";
+        });
+        button.addEventListener("click", () => {
+          mapLocationName.textContent = location.label;
+          if (location.action === "villageHall") {
+            window.location.href = "village_hall.html";
+            return;
+          }
+          showLockedToast();
+        });
+        locationZones.appendChild(button);
+      });
+    }
+
+    renderLocationZones();
+  </script>
+</body>
+</html>

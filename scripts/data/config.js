@@ -49,7 +49,7 @@ const soulMaxLevel = 4;
 const soulCombatGainSteps = soulStepsPerLevel / 5;
 const soulDeathGainSteps = soulStepsPerLevel;
 const attackJutsuStunMs = 2000;
-const jutsuMissEffectMs = 450;
+const jutsuMissEffectMs = 240;
 const butsumetsuCasterDeathDelayMs = 500;
 const attackJutsuTierRules = {
   1: { globalHitChance: 0.30, perTargetHitChance: 0.30 },

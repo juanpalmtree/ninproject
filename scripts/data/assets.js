@@ -33,6 +33,7 @@ const soundSources = {
   weapon7Ougi: "assets/sfx/ougi/weapon7.wav",
   weapon8Ougi: "assets/sfx/ougi/weapon8.wav",
   weapon10Ougi: "assets/sfx/ougi/weapon10.wav",
+  weapon10OugiEnd: "assets/sfx/ougi/weapon10_end.wav",
   weapon11Ougi: "assets/sfx/ougi/weapon11.wav",
   weapon12Ougi: "assets/sfx/ougi/weapon12.wav",
   weapon13Ougi: "assets/sfx/ougi/weapon13.wav",
@@ -42,22 +43,25 @@ const soundSources = {
   weapon19Ougi1: "assets/sfx/ougi/weapon19_ougi1.mp3",
   weapon19Ougi2: "assets/sfx/ougi/weapon19_ougi2.mp3",
   weapon19Ougi3: "assets/sfx/ougi/weapon19_ougi3.mp3",
-  weapon19Ougi1Chid4: "assets/nindou_exports/sounds/4.mp3",
-  weapon19Ougi1Chid20: "assets/nindou_exports/sounds/20.mp3",
-  weapon19Ougi1Chid25: "assets/nindou_exports/sounds/25.mp3",
-  weapon19Ougi1Chid33: "assets/nindou_exports/sounds/33.mp3",
-  weapon19Ougi1Chid40: "assets/nindou_exports/sounds/40.mp3",
-  weapon19Ougi1Chid45: "assets/nindou_exports/sounds/45.mp3",
-  weapon19Ougi1Chid56: "assets/nindou_exports/sounds/56.mp3",
-  weapon19Ougi1Chid72: "assets/nindou_exports/sounds/72.mp3",
-  weapon19Ougi1Chid74: "assets/nindou_exports/sounds/74.mp3",
-  weapon19Ougi1Chid75: "assets/nindou_exports/sounds/75.mp3",
-  weapon19Ougi1Chid85: "assets/nindou_exports/sounds/85.mp3",
-  weapon19Ougi1Chid93: "assets/nindou_exports/sounds/93.mp3",
-  weapon19Ougi1Chid94: "assets/nindou_exports/sounds/94.mp3",
-  weapon19Ougi1Chid113: "assets/nindou_exports/sounds/113.mp3",
-  weapon19Ougi1Chid119: "assets/nindou_exports/sounds/119.mp3",
-  weapon19Ougi1Chid975: "assets/nindou_exports/sounds/975.mp3",
+  weapon19Ougi1Chid4: "assets/sfx/ougi/weapon19_1_all/4.mp3",
+  weapon19Ougi1Chid20: "assets/sfx/ougi/weapon19_1_all/20.mp3",
+  weapon19Ougi1Chid25: "assets/sfx/ougi/weapon19_1_all/25.mp3",
+  weapon19Ougi1Chid33: "assets/sfx/ougi/weapon19_1_all/33.mp3",
+  weapon19Ougi1Chid40: "assets/sfx/ougi/weapon19_1_all/40.mp3",
+  weapon19Ougi1Chid45: "assets/sfx/ougi/weapon19_1_all/45.mp3",
+  weapon19Ougi1Chid56: "assets/sfx/ougi/weapon19_1_all/56.mp3",
+  weapon19Ougi1Chid72: "assets/sfx/ougi/weapon19_1_all/72.mp3",
+  weapon19Ougi1Chid74: "assets/sfx/ougi/weapon19_1_all/74.mp3",
+  weapon19Ougi1Chid75: "assets/sfx/ougi/weapon19_1_all/75.mp3",
+  weapon19Ougi1Chid85: "assets/sfx/ougi/weapon19_1_all/85.mp3",
+  weapon19Ougi1Chid93: "assets/sfx/ougi/weapon19_1_all/93.mp3",
+  weapon19Ougi1Chid94: "assets/sfx/ougi/weapon19_1_all/94.mp3",
+  weapon19Ougi1Chid113: "assets/sfx/ougi/weapon19_1_all/113.mp3",
+  weapon19Ougi1Chid119: "assets/sfx/ougi/weapon19_1_all/119.mp3",
+  weapon19Ougi1Chid975: "assets/sfx/ougi/weapon19_1_all/975.mp3",
+  weapon20Ougi1: "assets/sfx/ougi/weapon20_ougi1.mp3",
+  weapon20Ougi2: "assets/sfx/ougi/weapon20_ougi2.mp3",
+  weapon20Ougi3: "assets/sfx/ougi/weapon20_ougi3.mp3",
   yashaoRunOver: "assets/yashao/sounds/1_SFX_Bot_RunOver_yashao2.mp3",
   yashaoKilled: "assets/yashao/sounds/2_SFX_Bot_Killed_yashao2.mp3",
   sevenNinju: "assets/ninju/special_exports/sounds/919.mp3",
@@ -87,6 +91,572 @@ const soundSources = {
   breakChest: "assets/sfx/break_item/3.ogg",
 };
 
+[
+  ["weapon20Ougi1Chid", "assets/sfx/ougi/weapon20_1_all", [309, 314, 434, 447, 448, 494, 495, 496, 497, 498, 513, 514]],
+  ["weapon20Ougi2Chid", "assets/sfx/ougi/weapon20_2_all", [309, 314, 446, 459, 460, 516, 517, 518, 519, 520, 525, 526, 551, 552, 553, 559, 565, 566]],
+  ["weapon20Ougi3Chid", "assets/sfx/ougi/weapon20_3_all", [309, 314, 451, 467, 514, 515, 516, 517, 518, 519, 520, 523, 531, 537, 538, 545]],
+].forEach(([prefix, folder, ids]) => {
+  ids.forEach((id) => {
+    soundSources[`${prefix}${id}`] = `${folder}/${id}.mp3`;
+  });
+});
+
+const ougiPerTierSoundBanks = {
+  weapon1Ougi1Chid: [
+    "assets/sfx/ougi/weapon1_1_all",
+    [
+      114,
+      129,
+      130,
+      137,
+      139
+    ]
+  ],
+  weapon1Ougi2Chid: [
+    "assets/sfx/ougi/weapon1_2_all",
+    [
+      133,
+      144,
+      145,
+      155,
+      164,
+      166
+    ]
+  ],
+  weapon1Ougi3Chid: [
+    "assets/sfx/ougi/weapon1_3_all",
+    [
+      170,
+      181,
+      186,
+      187,
+      188,
+      189,
+      190,
+      199
+    ]
+  ],
+  weapon5Ougi1Chid: [
+    "assets/sfx/ougi/weapon5_1_all",
+    [
+      83,
+      94,
+      95,
+      110,
+      114
+    ]
+  ],
+  weapon5Ougi2Chid: [
+    "assets/sfx/ougi/weapon5_2_all",
+    [
+      93,
+      104,
+      109,
+      113,
+      114,
+      122,
+      126
+    ]
+  ],
+  weapon5Ougi3Chid: [
+    "assets/sfx/ougi/weapon5_3_all",
+    [
+      114,
+      125,
+      134,
+      139,
+      143,
+      144,
+      145,
+      146,
+      154,
+      158
+    ]
+  ],
+  weapon6Ougi1Chid: [
+    "assets/sfx/ougi/weapon6_1_all",
+    [
+      316,
+      362,
+      373,
+      378,
+      387,
+      391
+    ]
+  ],
+  weapon6Ougi2Chid: [
+    "assets/sfx/ougi/weapon6_2_all",
+    [
+      316,
+      359,
+      383,
+      384,
+      385,
+      389
+    ]
+  ],
+  weapon6Ougi3Chid: [
+    "assets/sfx/ougi/weapon6_3_all",
+    [
+      316,
+      380,
+      391,
+      405,
+      406,
+      411,
+      415
+    ]
+  ],
+  weapon7Ougi1Chid: [
+    "assets/sfx/ougi/weapon7_1_all",
+    [
+      180,
+      227,
+      244,
+      255,
+      259
+    ]
+  ],
+  weapon7Ougi2Chid: [
+    "assets/sfx/ougi/weapon7_2_all",
+    [
+      180,
+      235,
+      252,
+      261,
+      267,
+      271
+    ]
+  ],
+  weapon7Ougi3Chid: [
+    "assets/sfx/ougi/weapon7_3_all",
+    [
+      180,
+      264,
+      284,
+      291,
+      304,
+      305,
+      309,
+      313
+    ]
+  ],
+  weapon8Ougi1Chid: [
+    "assets/sfx/ougi/weapon8_1_all",
+    [
+      229,
+      267,
+      283,
+      287
+    ]
+  ],
+  weapon8Ougi2Chid: [
+    "assets/sfx/ougi/weapon8_2_all",
+    [
+      229,
+      279,
+      299,
+      304,
+      308
+    ]
+  ],
+  weapon8Ougi3Chid: [
+    "assets/sfx/ougi/weapon8_3_all",
+    [
+      229,
+      294,
+      311,
+      316,
+      317,
+      327,
+      331
+    ]
+  ],
+  weapon10Ougi1Chid: [
+    "assets/sfx/ougi/weapon10_1_all",
+    [
+      526,
+      599,
+      610,
+      611,
+      635,
+      636,
+      637,
+      660,
+      661,
+      665
+    ]
+  ],
+  weapon10Ougi2Chid: [
+    "assets/sfx/ougi/weapon10_2_all",
+    [
+      526,
+      612,
+      623,
+      639,
+      640,
+      641,
+      642,
+      645,
+      646,
+      647,
+      670,
+      671,
+      675
+    ]
+  ],
+  weapon10Ougi3Chid: [
+    "assets/sfx/ougi/weapon10_3_all",
+    [
+      526,
+      661,
+      672,
+      688,
+      689,
+      690,
+      691,
+      697,
+      698,
+      699,
+      700,
+      701,
+      705,
+      706,
+      710
+    ]
+  ],
+  weapon11Ougi1Chid: [
+    "assets/sfx/ougi/weapon11_1_all",
+    [
+      204,
+      205,
+      238,
+      249,
+      250,
+      255,
+      256,
+      260,
+      264
+    ]
+  ],
+  weapon11Ougi2Chid: [
+    "assets/sfx/ougi/weapon11_2_all",
+    [
+      204,
+      205,
+      245,
+      256,
+      265,
+      269,
+      275,
+      283,
+      284,
+      286,
+      299
+    ]
+  ],
+  weapon11Ougi3Chid: [
+    "assets/sfx/ougi/weapon11_3_all",
+    [
+      204,
+      205,
+      267,
+      278,
+      287,
+      288,
+      293,
+      294,
+      295,
+      299,
+      301,
+      312,
+      331,
+      338
+    ]
+  ],
+  weapon12Ougi1Chid: [
+    "assets/sfx/ougi/weapon12_1_all",
+    [
+      305,
+      369,
+      380,
+      382,
+      394,
+      398,
+      405
+    ]
+  ],
+  weapon12Ougi2Chid: [
+    "assets/sfx/ougi/weapon12_2_all",
+    [
+      305,
+      388,
+      403,
+      419,
+      420,
+      421,
+      423,
+      438
+    ]
+  ],
+  weapon12Ougi3Chid: [
+    "assets/sfx/ougi/weapon12_3_all",
+    [
+      305,
+      354,
+      365,
+      370,
+      378,
+      382,
+      383,
+      384,
+      385
+    ]
+  ],
+  weapon13Ougi1Chid: [
+    "assets/sfx/ougi/weapon13_1_all",
+    [
+      204,
+      214,
+      288,
+      299,
+      315,
+      320,
+      327,
+      331,
+      332,
+      333,
+      335,
+      336,
+      340,
+      351
+    ]
+  ],
+  weapon13Ougi2Chid: [
+    "assets/sfx/ougi/weapon13_2_all",
+    [
+      204,
+      214,
+      279,
+      305,
+      306,
+      311,
+      322,
+      323,
+      324,
+      325,
+      326,
+      330,
+      341
+    ]
+  ],
+  weapon13Ougi3Chid: [
+    "assets/sfx/ougi/weapon13_3_all",
+    [
+      204,
+      214,
+      299,
+      325,
+      326,
+      331,
+      342,
+      343,
+      344,
+      345,
+      346,
+      350,
+      361
+    ]
+  ],
+  weapon14Ougi1Chid: [
+    "assets/sfx/ougi/weapon14_1_all",
+    [
+      222,
+      223,
+      291,
+      306,
+      307,
+      333,
+      339
+    ]
+  ],
+  weapon14Ougi2Chid: [
+    "assets/sfx/ougi/weapon14_2_all",
+    [
+      222,
+      223,
+      267,
+      288,
+      289,
+      295,
+      301,
+      302
+    ]
+  ],
+  weapon14Ougi3Chid: [
+    "assets/sfx/ougi/weapon14_3_all",
+    [
+      222,
+      223,
+      334,
+      349,
+      350,
+      351,
+      366,
+      372,
+      381,
+      382
+    ]
+  ],
+  weapon15Ougi1Chid: [
+    "assets/sfx/ougi/weapon15_1_all",
+    [
+      188,
+      234,
+      245,
+      265,
+      274,
+      282,
+      283
+    ]
+  ],
+  weapon15Ougi2Chid: [
+    "assets/sfx/ougi/weapon15_2_all",
+    [
+      188,
+      234,
+      257,
+      296,
+      305,
+      313,
+      314
+    ]
+  ],
+  weapon15Ougi3Chid: [
+    "assets/sfx/ougi/weapon15_3_all",
+    [
+      188,
+      235,
+      254,
+      293,
+      298,
+      303,
+      304,
+      312,
+      320,
+      321
+    ]
+  ],
+  weapon16Ougi1Chid: [
+    "assets/sfx/ougi/weapon16_1_all",
+    [
+      12,
+      238,
+      253,
+      258,
+      259,
+      279,
+      292,
+      293
+    ]
+  ],
+  weapon16Ougi2Chid: [
+    "assets/sfx/ougi/weapon16_2_all",
+    [
+      12,
+      234,
+      249,
+      254,
+      255,
+      287,
+      288
+    ]
+  ],
+  weapon16Ougi3Chid: [
+    "assets/sfx/ougi/weapon16_3_all",
+    [
+      12,
+      249,
+      264,
+      265,
+      285,
+      294,
+      295,
+      312,
+      313
+    ]
+  ],
+  weapon19Ougi1Chid: [
+    "assets/sfx/ougi/weapon19_1_all",
+    [
+      4,
+      20,
+      25,
+      33,
+      40,
+      45,
+      56,
+      72,
+      74,
+      75,
+      85,
+      93,
+      94,
+      113,
+      119,
+      975
+    ]
+  ],
+  weapon19Ougi2Chid: [
+    "assets/sfx/ougi/weapon19_2_all",
+    [
+      4,
+      20,
+      25,
+      33,
+      40,
+      45,
+      56,
+      72,
+      74,
+      75,
+      85,
+      93,
+      94,
+      113,
+      119,
+      975,
+      1088
+    ]
+  ],
+  weapon19Ougi3Chid: [
+    "assets/sfx/ougi/weapon19_3_all",
+    [
+      4,
+      20,
+      25,
+      33,
+      40,
+      45,
+      56,
+      72,
+      74,
+      75,
+      85,
+      93,
+      94,
+      113,
+      119,
+      975
+    ]
+  ]
+};
+Object.entries(ougiPerTierSoundBanks).forEach(([prefix, [folder, ids]]) => {
+  ids.forEach((id) => {
+    soundSources[`${prefix}${id}`] = `${folder}/${id}.mp3`;
+  });
+});
+
 const images = {};
 const sounds = Object.fromEntries(Object.entries(soundSources).map(([key, src]) => {
   const audio = new Audio(src);
@@ -111,6 +681,7 @@ const imageSources = {
   greyLeft: "assets/ninja-grey/idleLeft.png",
   greyRight: "assets/ninja-grey/idleRight.png",
   greyUp: "assets/ninja-grey/idleUp.png",
+  seigaihaOugi2Phantom: "assets/ougi/weapon20/2/phantom/1.png",
   tree: "assets/map-objects/tree.png",
   hay: "assets/map-objects/hay.png",
   vase: "assets/map-objects/vase.png",
@@ -123,11 +694,11 @@ const imageSources = {
   steelButton: "assets/ninju/buttons/2.png",
   healButton: "assets/ninju/buttons/4.png",
   moneyDartButton: "assets/ninju/money_mark/button_base/3.png",
-  moneyDartHold: "assets/ninju/money_mark/projectile_candidates/images_weapon_93/taking.png",
-  moneyDartDown: "assets/ninju/money_mark/projectile_candidates/images_weapon_93/goldpanD.png",
-  moneyDartLeft: "assets/ninju/money_mark/projectile_candidates/images_weapon_93/goldpanL.png",
-  moneyDartRight: "assets/ninju/money_mark/projectile_candidates/images_weapon_93/goldpanR.png",
-  moneyDartUp: "assets/ninju/money_mark/projectile_candidates/images_weapon_93/goldpanU.png",
+  moneyDartHold: "assets/ninju/money_mark/projectiles/images_weapon_93/taking.png",
+  moneyDartDown: "assets/ninju/money_mark/projectiles/images_weapon_93/goldpanD.png",
+  moneyDartLeft: "assets/ninju/money_mark/projectiles/images_weapon_93/goldpanL.png",
+  moneyDartRight: "assets/ninju/money_mark/projectiles/images_weapon_93/goldpanR.png",
+  moneyDartUp: "assets/ninju/money_mark/projectiles/images_weapon_93/goldpanU.png",
   blueIcon: "assets/ui/b_icon.png",
   greyIcon: "assets/ui/g_icon.png",
   blueTeam: "assets/ui/b_team.png",
@@ -159,7 +730,7 @@ const imageSources = {
   fireToadGreyRight: "assets/nindou_fire_toad/sprites/DefineSprite_414_Idle_Right_Toad_G/1.png",
   fireToadGreyLeft: "assets/nindou_fire_toad/sprites/DefineSprite_416_Idle_Left_Toad_G/1.png",
   fireToadGreyDown: "assets/nindou_fire_toad/sprites/DefineSprite_423_Idle_Down_Toad_G/1.png",
-  chargeOuter: "assets/charge-effect-candidates/matched-charge-ring/final-candidate/outer_moving.png",
+  chargeOuter: "assets/charge-effect/outer_moving.png",
   eyesFront: "assets/ninja-composite-parts/eyes-middle/11.png",
   eyeSide: "assets/ninja-composite-parts/eyes-look-right/11.png",
 };
@@ -315,26 +886,26 @@ const specialNinjuHitFrameSources = Object.fromEntries(Object.entries(specialNin
 ]));
 const specialNinjuFrames = Object.fromEntries(Object.keys(specialNinjuConfigs).map((type) => [type, []]));
 const specialNinjuHitFrames = Object.fromEntries(Object.keys(specialNinjuConfigs).map((type) => [type, []]));
-const chargeRedFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect-candidates/matched-charge-ring/final-candidate/inner_fire/${index + 1}.png`);
-const chargeYellowFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect-candidates/matched-charge-ring/final-candidate/inner_fire/${index + 5}.png`);
+const chargeRedFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect/inner_fire/${index + 1}.png`);
+const chargeYellowFrameSources = Array.from({ length: 4 }, (_, index) => `assets/charge-effect/inner_fire/${index + 5}.png`);
 const chargeRedFrames = [];
 const chargeYellowFrames = [];
-const respawnPointerFrameSources = Array.from({ length: 32 }, (_, index) => `assets/respawn-pointer-candidates/ninja_back_pointer/${index + 1}.png`);
+const respawnPointerFrameSources = Array.from({ length: 32 }, (_, index) => `assets/respawn-pointer/ninja_back_pointer/${index + 1}.png`);
 const respawnPointerFrames = [];
 const dragArrowFrameSources = {
-  right: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer-candidates/ninja_arrow_0/${index + 1}.png`),
-  left: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer-candidates/ninja_arrow_1/${index + 1}.png`),
-  up: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer-candidates/ninja_arrow_2/${index + 1}.png`),
-  down: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer-candidates/ninja_arrow_3/${index + 1}.png`),
+  right: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer/ninja_arrow_0/${index + 1}.png`),
+  left: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer/ninja_arrow_1/${index + 1}.png`),
+  up: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer/ninja_arrow_2/${index + 1}.png`),
+  down: Array.from({ length: 6 }, (_, index) => `assets/respawn-pointer/ninja_arrow_3/${index + 1}.png`),
 };
 const dragArrowFrames = { right: [], left: [], up: [], down: [] };
 const useNinjuFrameSources = {
-  blue: Array.from({ length: 12 }, (_, index) => `exports/jutsus/sprites/DefineSprite_1548_ShowFingers_B/${index + 1}.png`),
-  grey: Array.from({ length: 12 }, (_, index) => `exports/jutsus/sprites/DefineSprite_1546_ShowFingers_G/${index + 1}.png`),
+  blue: Array.from({ length: 12 }, (_, index) => `assets/runtime/jutsus/sprites/DefineSprite_1548_ShowFingers_B/${index + 1}.png`),
+  grey: Array.from({ length: 12 }, (_, index) => `assets/runtime/jutsus/sprites/DefineSprite_1546_ShowFingers_G/${index + 1}.png`),
 };
 const useNinjuFrames = { blue: [], grey: [] };
 
-const moneyDartReadyFrameSources = Array.from({ length: 10 }, (_, index) => `assets/ninju/money_mark/projectile_candidates/images_ninja_dart/${index + 1}.png`);
+const moneyDartReadyFrameSources = Array.from({ length: 10 }, (_, index) => `assets/ninju/money_mark/projectiles/images_ninja_dart/${index + 1}.png`);
 const moneyDartReadyFrames = [];
 const moneyDartShootFrameSources = {
   right: Array.from({ length: 7 }, (_, index) => `assets/ninju/money_mark/shoot_dart_exact/b_shoot_dart_0/${String(index + 1).padStart(2, "0")}_${index + 1}.png`),
@@ -347,6 +918,8 @@ const ougiLockFrameSources = Array.from({ length: 8 }, (_, index) => `assets/sta
 const ougiLockFrames = [];
 const deathSkullFrameSources = Array.from({ length: 30 }, (_, index) => `assets/effects/death_skull/${index + 1}.png`);
 const deathSkullFrames = [];
+const deathFallFrameSources = {};
+const deathFallFrames = {};
 const deathSkullAnimationMs = 1050;
 const matchEndPromptMs = 4000;
 const matchEndFrameSources = {

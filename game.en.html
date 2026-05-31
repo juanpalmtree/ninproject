@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -6,18 +6,127 @@
   <title>Nindou 2 Offline Prototype</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="room-mode">
+<body class="room-mode app-flow-mode">
   <main class="app">
     <section class="stage">
+      <section id="loginScreen" class="app-flow-screen login-screen active" data-screen="login" aria-label="Login screen">
+        <div class="flow-panel login-panel">
+          <div class="flow-brand">
+            <span>NIN</span>
+            <strong>Nindou 3 Prototype</strong>
+          </div>
+          <label class="flow-field">
+            <span>Account</span>
+            <input id="loginNameInput" type="text" maxlength="18" value="Player" autocomplete="off">
+          </label>
+          <button id="loginContinueBtn" type="button" class="flow-primary-btn">Login</button>
+        </div>
+      </section>
+
+      <section id="characterSelectScreen" class="app-flow-screen character-select-screen" data-screen="characterSelect" aria-label="Character selection">
+        <div class="flow-panel wide">
+          <header class="flow-header">
+            <div>
+              <span>Character</span>
+              <strong>Select Ninja</strong>
+            </div>
+            <button id="newCharacterBtn" type="button">Create</button>
+          </header>
+          <div id="characterList" class="character-list"></div>
+        </div>
+      </section>
+
+      <section id="characterCreateScreen" class="app-flow-screen character-create-screen" data-screen="characterCreate" aria-label="Create character">
+        <div class="flow-panel wide">
+          <header class="flow-header">
+            <div>
+              <span>New Character</span>
+              <strong>Create Ninja</strong>
+            </div>
+            <button id="cancelCreateCharacterBtn" type="button">Back</button>
+          </header>
+          <div class="create-character-layout">
+            <div class="create-preview">
+              <div id="createAvatarPreview" class="create-avatar-preview"></div>
+            </div>
+            <div class="create-form">
+              <label class="flow-field">
+                <span>Name</span>
+                <input id="characterNameInput" type="text" maxlength="16" value="Blue1" autocomplete="off">
+              </label>
+              <label class="flow-field">
+                <span>Team Color</span>
+                <select id="characterTeamSelect">
+                  <option value="blue" selected>Blue</option>
+                  <option value="grey">Grey</option>
+                </select>
+              </label>
+              <label class="flow-field">
+                <span>Eyes</span>
+                <select id="eyesSelect"></select>
+              </label>
+              <button id="saveCharacterBtn" type="button" class="flow-primary-btn">Create Character</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="worldMapScreen" class="app-flow-screen world-map-screen" data-screen="worldMap" aria-label="World map">
+        <div class="nekomata-map-ui">
+          <img class="nekomata-map-image" src="assets/ui/map/nekomata-map-cropped.png" alt="Nekomata map">
+          <div class="nekomata-location-readout" aria-live="polite">
+            <span>Location Sushi</span>
+            <strong id="mapLocationName">Nekomata</strong>
+          </div>
+          <button id="nekomataReturnBtn" type="button" class="nekomata-return-zone" aria-label="Return to character select"></button>
+          <div id="nekomataLocationZones" class="nekomata-location-zones" aria-label="Nekomata locations"></div>
+        </div>
+      </section>
+
+      <section id="commonRoomScreen" class="app-flow-screen common-room-screen" data-screen="commonRoom" aria-label="Common area">
+        <div class="village-hall-screen" aria-label="Village Hall">
+          <img
+            class="vector-layer"
+            src="assets/runtime/ui_vectors/lobbies/shapes/1.2.svg"
+            alt=""
+            style="top: -75px; left: 28.5px; width: 818.5px; height: 624px; z-index: 0;"
+          >
+          <img
+            class="vector-layer"
+            src="assets/runtime/ui_vectors/lobbies/shapes/683.svg"
+            alt=""
+            style="top: -3px; left: -3px; width: 802px; height: 603px; z-index: 1;"
+          >
+          <img
+            class="vector-layer"
+            src="assets/runtime/ui_vectors/lobbies/shapes/1.3.svg"
+            alt=""
+            style="top: 12px; left: 535.5px; width: 253px; height: 528px; z-index: 3;"
+          >
+          <button id="commonRoomMapBtn" type="button" class="village-map-button">Map</button>
+          <section class="village-profile-panel" aria-label="Selected character profile">
+            <div id="commonAvatarSlot" class="village-profile-avatar"></div>
+            <div class="village-profile-copy">
+              <strong id="commonCharacterName">Player</strong>
+              <div class="village-profile-rank">
+                <img id="commonCharacterRankMark" class="village-profile-rank-mark" src="assets/ui/rank-marks/1.svg" alt="Shoshinsha rank mark">
+                <span id="commonCharacterRank">Lv. 1 Shoshinsha</span>
+              </div>
+            </div>
+          </section>
+          <section id="villageRoomListPanel" class="room-list-panel" aria-label="Available rooms"></section>
+        </div>
+      </section>
+
       <section id="roomScreen" class="room-screen" aria-label="Room screen">
         <div class="room-frame">
           <header class="room-topbar">
-            <button id="ruleModeToggle" type="button" class="room-rule-toggle" aria-pressed="false" aria-label="Nindou 2 Original">
+            <button id="ruleModeToggle" type="button" class="room-rule-toggle" aria-pressed="false" aria-label="Nindou 3">
               <span class="room-rule-checkbox">
-                <img class="room-rule-checkbox-base" src="assets/room-candidates/waiting_room/checkbox.png" alt="">
-                <img id="ruleModeCheckbox" class="room-rule-checkbox-check" src="assets/room-candidates/waiting_room/checkbox_checked.png" alt="">
+                <img class="room-rule-checkbox-base" src="assets/room-ui/waiting_room/checkbox.png" alt="">
+                <img id="ruleModeCheckbox" class="room-rule-checkbox-check" src="assets/room-ui/waiting_room/checkbox_checked.png" alt="">
               </span>
-              <span>Nindou 2 Original</span>
+              <span id="ruleModeLabel">Nindou 3</span>
             </button>
             <div class="room-title-cell"><span>Mode</span><strong>Rescue the Princess</strong></div>
             <button type="button" class="room-leave-btn" aria-label="Leave"></button>
@@ -31,11 +140,11 @@
 
           <div class="player-grid" aria-label="Player cards">
             <article class="room-player-card host blue active-slot" data-team="blue" data-slot="1">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">blue1</div>
-              <img class="room-avatar" src="assets/room-ui-selected/b_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
+              <img class="room-avatar" src="assets/ninja-blue/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
               <div class="room-level"></div>
               <img class="room-owner" src="assets/room-ui-selected/room_owner.png" alt="Room host">
               <input class="room-hp-input" data-team="blue" data-slot="1" type="number" min="1" max="9999" step="1" value="300" aria-label="Blue 1 HP">
@@ -52,47 +161,47 @@
               </select>
             </article>
             <article class="room-player-card blue" data-team="blue" data-slot="2">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">blue2</div>
-              <img class="room-avatar" src="assets/room-ui-selected/b_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 99 Role: Gale General</div>
+              <img class="room-avatar" src="assets/ninja-blue/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="blue" data-slot="2" type="number" min="1" max="9999" step="1" value="300" aria-label="Blue 2 HP">
               <select class="room-control-select" data-team="blue" data-slot="2" aria-label="Blue 2 Control"></select>
               <select class="room-weapon-select" data-team="blue" data-slot="2" aria-label="Blue 2 Weapon"></select>
             </article>
             <article class="room-player-card blue" data-team="blue" data-slot="3">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">blue3</div>
-              <img class="room-avatar" src="assets/room-ui-selected/b_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 99 Role: Genin</div>
+              <img class="room-avatar" src="assets/ninja-blue/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="blue" data-slot="3" type="number" min="1" max="9999" step="1" value="300" aria-label="Blue 3 HP">
               <select class="room-control-select" data-team="blue" data-slot="3" aria-label="Blue 3 Control"></select>
               <select class="room-weapon-select" data-team="blue" data-slot="3" aria-label="Blue 3 Weapon"></select>
             </article>
             <article class="room-player-card blue" data-team="blue" data-slot="4">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">blue4</div>
-              <img class="room-avatar" src="assets/room-ui-selected/b_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 20 Role: Beginner</div>
+              <img class="room-avatar" src="assets/ninja-blue/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="blue" data-slot="4" type="number" min="1" max="9999" step="1" value="300" aria-label="Blue 4 HP">
               <select class="room-control-select" data-team="blue" data-slot="4" aria-label="Blue 4 Control"></select>
               <select class="room-weapon-select" data-team="blue" data-slot="4" aria-label="Blue 4 Weapon"></select>
             </article>
             <article class="room-player-card grey active-slot" data-team="grey" data-slot="1">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">grey1</div>
-              <img class="room-avatar" src="assets/room-ui-selected/g_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
+              <img class="room-avatar" src="assets/ninja-grey/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
               <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="grey" data-slot="1" type="number" min="1" max="9999" step="1" value="300" aria-label="Grey 1 HP">
@@ -100,36 +209,36 @@
               <select class="room-weapon-select" data-team="grey" data-slot="1" aria-label="Grey 1 Weapon"></select>
             </article>
             <article class="room-player-card grey" data-team="grey" data-slot="2">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">grey2</div>
-              <img class="room-avatar" src="assets/room-ui-selected/g_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 22 Role: Chunin</div>
+              <img class="room-avatar" src="assets/ninja-grey/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="grey" data-slot="2" type="number" min="1" max="9999" step="1" value="300" aria-label="Grey 2 HP">
               <select class="room-control-select" data-team="grey" data-slot="2" aria-label="Grey 2 Control"></select>
               <select class="room-weapon-select" data-team="grey" data-slot="2" aria-label="Grey 2 Weapon"></select>
             </article>
             <article class="room-player-card grey" data-team="grey" data-slot="3">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">grey3</div>
-              <img class="room-avatar" src="assets/room-ui-selected/g_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 18 Role: Chunin</div>
+              <img class="room-avatar" src="assets/ninja-grey/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="grey" data-slot="3" type="number" min="1" max="9999" step="1" value="300" aria-label="Grey 3 HP">
               <select class="room-control-select" data-team="grey" data-slot="3" aria-label="Grey 3 Control"></select>
               <select class="room-weapon-select" data-team="grey" data-slot="3" aria-label="Grey 3 Weapon"></select>
             </article>
             <article class="room-player-card grey" data-team="grey" data-slot="4">
-              <button type="button" class="room-slot-remove" aria-label="Remove">×</button>
+              <button type="button" class="room-slot-remove" aria-label="Remove">�</button>
               <button type="button" class="room-slot-add" aria-label="Add">Add</button>
               <div class="room-name">grey4</div>
-              <img class="room-avatar" src="assets/room-ui-selected/g_team.png" alt="">
-              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/11.png" alt="">
-              <div class="room-level">Lv. 23 Role: Jonin</div>
+              <img class="room-avatar" src="assets/ninja-grey/idleDown.png" alt="">
+              <img class="room-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
+              <div class="room-level"></div>
               <img class="room-ready" src="assets/room-ui-selected/player_not_ready.png" alt="Not ready">
               <input class="room-hp-input" data-team="grey" data-slot="4" type="number" min="1" max="9999" step="1" value="300" aria-label="Grey 4 HP">
               <select class="room-control-select" data-team="grey" data-slot="4" aria-label="Grey 4 Control"></select>
@@ -176,10 +285,11 @@
 
           <section id="ninjuEditor" class="room-ninju-editor" aria-label="Ninjutsu editor" hidden>
             <div class="ninju-editor-profile">
-              <img class="ninju-editor-avatar" src="assets/room-ui-selected/b_team.png" alt="">
+              <img class="ninju-editor-avatar" src="assets/ninja-blue/idleDown.png" alt="">
+              <img id="ninjuEditorAvatarEye" class="ninju-editor-avatar-eye" src="assets/ninja-composite-parts/eyes-middle/5.png" alt="">
               <div class="ninju-editor-stats">
                 <div><span>Name</span><strong>Player</strong><button type="button">Change</button></div>
-                <div><span>Level</span><strong id="ninjuEditorLevel">99</strong><span>Role</span><strong id="ninjuEditorRole">Night Rogue</strong></div>
+                <div><span>Level</span><strong id="ninjuEditorLevel">--</strong><span>Role</span><strong id="ninjuEditorRole">--</strong></div>
                 <div><span>Guild</span><strong>Nindou</strong></div>
               </div>
               <div class="ninju-editor-score">
@@ -187,6 +297,7 @@
                 <div><span>Gold</span><strong>0</strong></div>
                 <div><span>Rep</span><strong>0</strong></div>
               </div>
+              <img id="ninjuEditorRankMark" class="ninju-editor-rank-mark" src="assets/ui/rank-marks/1.svg" alt="Shoshinsha rank mark">
               <div class="ninju-editor-mark">NIN</div>
             </div>
 
@@ -249,5 +360,3 @@
   <script src="game.en.js"></script>
 </body>
 </html>
-
-

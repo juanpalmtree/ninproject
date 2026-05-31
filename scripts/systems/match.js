@@ -44,6 +44,8 @@ function startDeathAnimation(unit, p) {
     team: unit.team,
     x: p.x,
     y: p.y,
+    facing: unit.facing || "down",
+    eyeStyle: unit.eyeStyle,
     startedAt: performance.now(),
     duration: deathSkullAnimationMs,
   });
@@ -51,10 +53,9 @@ function startDeathAnimation(unit, p) {
 
 function queueMatchFinish(winner) {
   const now = performance.now();
-  state.gameOver = true;
   state.pendingResult = {
     winner,
-    finishAt: Math.max(now + deathSkullAnimationMs, activeOugiFinishAt(now)),
+    finishAt: Math.max(now + deathSkullAnimationMs, activeDeathAnimationFinishAt(now), activeOugiFinishAt(now)),
   };
   clearDragState();
   setMessage(winner === "blue" ? "Victory incoming." : "Defeat incoming.");
@@ -62,11 +63,21 @@ function queueMatchFinish(winner) {
 
 function updatePendingMatchResult(now) {
   if (!state.pendingResult || state.result) return;
-  state.pendingResult.finishAt = Math.max(state.pendingResult.finishAt || 0, activeOugiFinishAt(now));
+  state.pendingResult.finishAt = Math.max(state.pendingResult.finishAt || 0, activeDeathAnimationFinishAt(now), activeOugiFinishAt(now));
   if (now < state.pendingResult.finishAt) return;
   const winner = state.pendingResult.winner;
   state.pendingResult = null;
   finishMatch(winner);
+}
+
+function activeDeathAnimationFinishAt(now = performance.now()) {
+  if (!Array.isArray(state.deathAnimations)) return 0;
+  return state.deathAnimations.reduce((latest, animation) => {
+    const duration = Number(animation.duration) || 0;
+    const startedAt = Number(animation.startedAt) || 0;
+    const finishAt = startedAt + duration;
+    return finishAt > now ? Math.max(latest, finishAt) : latest;
+  }, 0);
 }
 
 function activeOugiFinishAt(now = performance.now()) {
@@ -81,7 +92,16 @@ function activeOugiFinishAt(now = performance.now()) {
 
 // Ends the match, records time, and plays result audio.
 function finishMatch(winner) {
+  if (state.result) return state.result;
   const now = performance.now();
+  const activeAnimationFinishAt = Math.max(activeDeathAnimationFinishAt(now), activeOugiFinishAt(now));
+  if (activeAnimationFinishAt > now) {
+    state.pendingResult = {
+      winner,
+      finishAt: Math.max(state.pendingResult?.finishAt || 0, activeAnimationFinishAt),
+    };
+    return null;
+  }
   state.gameOver = true;
   state.matchEnd = now;
   const resultAnimUntil = now + matchEndPromptMs;
@@ -97,6 +117,7 @@ function finishMatch(winner) {
     actors: buildMatchEndActors(winner),
     durationMs: Math.max(0, now - (state.matchStart || state.countdownStart || now)),
   };
+  state.result.expReward = awardSelectedCharacterMatchExp(winner);
   state.resultOverlayAt = now + matchEndPromptMs;
   state.resultClickableAt = state.resultOverlayAt + 2000;
   clearDragState();
@@ -106,6 +127,22 @@ function finishMatch(winner) {
     state.endSoundPlayed = true;
   }
   setMessage(winner === "blue" ? "Victory." : "Defeat.");
+  return state.result;
+}
+
+function temporaryMatchExpRewardForWinner(winner) {
+  return winner === "blue" ? 500 : 200;
+}
+
+function awardSelectedCharacterMatchExp(winner) {
+  const character = typeof selectedCharacterProfile === "function" ? selectedCharacterProfile() : null;
+  if (!character?.storage || typeof awardExpToProfile !== "function") return null;
+  const reward = awardExpToProfile(character.storage, temporaryMatchExpRewardForWinner(winner));
+  if (typeof saveAppProfile === "function") saveAppProfile();
+  if (typeof syncSelectedCharacterToRoom === "function") syncSelectedCharacterToRoom();
+  if (typeof renderFlowCharacterSummary === "function") renderFlowCharacterSummary();
+  if (typeof renderRoomInventoryPanel === "function") renderRoomInventoryPanel();
+  return reward;
 }
 
 function buildMatchEndActors(winner) {
@@ -118,6 +155,8 @@ function buildMatchEndActors(winner) {
       unitId: unit.id,
       team: unit.team,
       outcome: unit.team === winner ? "win" : "loss",
+      facing: unit.facing || "down",
+      eyeStyle: unit.eyeStyle,
       x: p.x,
       y: p.y,
     };

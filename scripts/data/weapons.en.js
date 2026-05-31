@@ -23,6 +23,41 @@ const weaponDefinitions = [
   { key: "weapon20", label: "Seigaiha", folder: "20Weapon20", frameCount: 9, cooldownMs: 300, area: "wide331", damage: 65, soundKey: "weapon20Slash" },
 ];
 const weaponDefinitionByKey = Object.fromEntries(weaponDefinitions.map((weapon) => [weapon.key, weapon]));
+function weaponDefinitionForKey(weaponKey) {
+  return weaponDefinitionByKey[weaponKey] || weaponDefinitionByKey[defaultWeaponKey];
+}
+
+function weaponSoundKey(weaponKey) {
+  const weapon = weaponDefinitionForKey(weaponKey);
+  return weapon?.soundKey || "slash";
+}
+
+function weaponFrameSource(weapon, direction, kind, index) {
+  return `assets/weapon/${weapon.folder}/${direction}_${kind}/${index + 1}.png`;
+}
+
+function weaponAttackAnimationDurationMs(weaponKey) {
+  const weapon = weaponDefinitionForKey(weaponKey);
+  return weapon?.cooldownMs || weaponCooldownMs;
+}
+
+function weaponAttackFrameDurationMs(weaponKey) {
+  const weapon = weaponDefinitionForKey(weaponKey);
+  const frameCount = Math.max(1, weapon?.frameCount || 1);
+  return weaponAttackAnimationDurationMs(weaponKey) / frameCount;
+}
+
+function buildWeaponAttackAnimationReport() {
+  return weaponDefinitions.map((weapon) => ({
+    key: weapon.key,
+    label: weapon.label,
+    frameCount: weapon.frameCount,
+    cooldownMs: weapon.cooldownMs,
+    animationDurationMs: weaponAttackAnimationDurationMs(weapon.key),
+    frameDurationMs: Number(weaponAttackFrameDurationMs(weapon.key).toFixed(2)),
+  }));
+}
+
 const weaponFrames = Object.fromEntries(weaponDefinitions.map((weapon) => [
   weapon.key,
   {
@@ -102,6 +137,99 @@ const ougiDefinitions = {
     3: { folder: "weapon20/3", frameCount: 137, cost: 49, damage: 330, duration: 3400, maxSize: 660, rangeShape: { type: "square", radius: 1 } },
   },
 };
+
+function ougiSoundKeys(prefix, ids) {
+  return ids.map((id) => `${prefix}${id}`);
+}
+
+function ougiSoundEvents(prefix, entries) {
+  return entries.map(([frame, id]) => ({ frame, key: `${prefix}${id}` }));
+}
+
+const ougiSoundOverrides = {
+  weapon1: {
+    1: { soundKeys: ougiSoundKeys("weapon1Ougi1Chid", [114, 129, 130, 137, 139]) },
+    2: { soundKeys: ougiSoundKeys("weapon1Ougi2Chid", [133, 144, 145, 155, 164, 166]) },
+    3: { soundKeys: ougiSoundKeys("weapon1Ougi3Chid", [170, 181, 186, 187, 188, 189, 190, 199]) },
+  },
+  weapon5: {
+    1: { soundKeys: ougiSoundKeys("weapon5Ougi1Chid", [83, 94, 95, 110, 114]) },
+    2: { soundKeys: ougiSoundKeys("weapon5Ougi2Chid", [93, 104, 109, 113, 114, 122, 126]) },
+    3: { soundKeys: ougiSoundKeys("weapon5Ougi3Chid", [114, 125, 134, 139, 143, 144, 145, 146, 154, 158]) },
+  },
+  weapon6: {
+    1: { soundKeys: ougiSoundKeys("weapon6Ougi1Chid", [316, 362, 373, 378, 387, 391]) },
+    2: { soundKeys: ougiSoundKeys("weapon6Ougi2Chid", [316, 359, 383, 384, 385, 389]) },
+    3: { soundKeys: ougiSoundKeys("weapon6Ougi3Chid", [316, 380, 391, 405, 406, 411, 415]) },
+  },
+  weapon7: {
+    1: { soundKeys: ougiSoundKeys("weapon7Ougi1Chid", [180, 227, 244, 255, 259]) },
+    2: { soundKeys: ougiSoundKeys("weapon7Ougi2Chid", [180, 235, 252, 261, 267, 271]) },
+    3: { soundKeys: ougiSoundKeys("weapon7Ougi3Chid", [180, 264, 284, 291, 304, 305, 309, 313]) },
+  },
+  weapon8: {
+    1: { soundKeys: ougiSoundKeys("weapon8Ougi1Chid", [229, 267, 283, 287]) },
+    2: { soundKeys: ougiSoundKeys("weapon8Ougi2Chid", [229, 279, 299, 304, 308]) },
+    3: { soundKeys: ougiSoundKeys("weapon8Ougi3Chid", [229, 294, 311, 316, 317, 327, 331]) },
+  },
+  weapon10: {
+    1: { soundFrameCount: 78, soundEvents: ougiSoundEvents("weapon10Ougi1Chid", [[2, 599], [15, 610], [25, 611], [27, 635], [27, 636], [31, 637], [39, 637], [42, 660], [51, 661], [60, 665], [62, 665], [76, 610]]) },
+    2: { soundFrameCount: 90, soundEvents: ougiSoundEvents("weapon10Ougi2Chid", [[2, 612], [13, 623], [20, 639], [20, 640], [23, 641], [26, 642], [29, 645], [32, 642], [32, 646], [34, 645], [37, 647], [38, 640], [40, 670], [43, 640], [62, 671], [65, 675], [67, 675], [88, 623]]) },
+    3: { soundFrameCount: 101, soundEvents: ougiSoundEvents("weapon10Ougi3Chid", [[2, 661], [13, 672], [20, 688], [20, 689], [23, 690], [26, 691], [32, 697], [32, 698], [34, 697], [36, 697], [37, 699], [38, 697], [40, 697], [40, 700], [42, 697], [42, 701], [44, 697], [46, 697], [46, 701], [48, 697], [50, 697], [50, 701], [52, 697], [54, 697], [54, 701], [54, 705], [56, 697], [58, 697], [58, 701], [58, 705], [64, 706], [76, 710], [78, 710], [99, 672]]) },
+  },
+  weapon11: {
+    1: { soundKeys: ougiSoundKeys("weapon11Ougi1Chid", [204, 205, 238, 249, 250, 255, 256, 260, 264]) },
+    2: { soundKeys: ougiSoundKeys("weapon11Ougi2Chid", [204, 205, 245, 256, 265, 269, 275, 283, 284, 286, 299]) },
+    3: { soundKeys: ougiSoundKeys("weapon11Ougi3Chid", [204, 205, 267, 278, 287, 288, 293, 294, 295, 299, 301, 312, 331, 338]) },
+  },
+  weapon12: {
+    1: { soundKeys: ougiSoundKeys("weapon12Ougi1Chid", [305, 369, 380, 382, 394, 398, 405]) },
+    2: { soundKeys: ougiSoundKeys("weapon12Ougi2Chid", [305, 388, 403, 419, 420, 421, 423, 438]) },
+    3: { soundKeys: ougiSoundKeys("weapon12Ougi3Chid", [305, 354, 365, 370, 378, 382, 383, 384, 385]) },
+  },
+  weapon13: {
+    1: { soundKeys: ougiSoundKeys("weapon13Ougi1Chid", [204, 214, 288, 299, 315, 320, 327, 331, 332, 333, 335, 336, 340, 351]) },
+    2: { soundKeys: ougiSoundKeys("weapon13Ougi2Chid", [204, 214, 279, 305, 306, 311, 322, 323, 324, 325, 326, 330, 341]) },
+    3: { soundKeys: ougiSoundKeys("weapon13Ougi3Chid", [204, 214, 299, 325, 326, 331, 342, 343, 344, 345, 346, 350, 361]) },
+  },
+  weapon14: {
+    1: { soundKeys: ougiSoundKeys("weapon14Ougi1Chid", [222, 223, 291, 306, 307, 333, 339]) },
+    2: { soundKeys: ougiSoundKeys("weapon14Ougi2Chid", [222, 223, 267, 288, 289, 295, 301, 302]) },
+    3: { soundKeys: ougiSoundKeys("weapon14Ougi3Chid", [222, 223, 334, 349, 350, 351, 366, 372, 381, 382]) },
+  },
+  weapon15: {
+    1: { soundKeys: ougiSoundKeys("weapon15Ougi1Chid", [188, 234, 245, 265, 274, 282, 283]) },
+    2: { soundKeys: ougiSoundKeys("weapon15Ougi2Chid", [188, 234, 257, 296, 305, 313, 314]) },
+    3: { soundKeys: ougiSoundKeys("weapon15Ougi3Chid", [188, 235, 254, 293, 298, 303, 304, 312, 320, 321]) },
+  },
+  weapon16: {
+    1: { soundKeys: ougiSoundKeys("weapon16Ougi1Chid", [12, 238, 253, 258, 259, 279, 292, 293]) },
+    2: { soundKeys: ougiSoundKeys("weapon16Ougi2Chid", [12, 234, 249, 254, 255, 287, 288]) },
+    3: { soundKeys: ougiSoundKeys("weapon16Ougi3Chid", [12, 249, 264, 265, 285, 294, 295, 312, 313]) },
+  },
+  weapon19: {
+    2: { soundKeys: ougiSoundKeys("weapon19Ougi2Chid", [4, 20, 25, 33, 40, 45, 56, 72, 74, 75, 85, 93, 94, 113, 119, 975, 1088]) },
+    3: { soundKeys: ougiSoundKeys("weapon19Ougi3Chid", [4, 20, 25, 33, 40, 45, 56, 72, 74, 75, 85, 93, 94, 113, 119, 975]) },
+  },
+  weapon20: {
+    1: { soundFrameCount: 155, soundEvents: ougiSoundEvents("weapon20Ougi1Chid", [[3, 434], [17, 447], [33, 448], [47, 494], [48, 495], [50, 496], [53, 314], [61, 497], [74, 498], [82, 447], [121, 513], [126, 513], [144, 514], [155, 498]]) },
+    2: { soundFrameCount: 244, soundEvents: ougiSoundEvents("weapon20Ougi2Chid", [[3, 446], [14, 459], [31, 460], [44, 516], [45, 517], [49, 314], [51, 518], [57, 519], [64, 518], [73, 519], [79, 520], [81, 518], [97, 518], [98, 525], [103, 526], [109, 518], [112, 518], [113, 459], [140, 551], [143, 552], [148, 553], [181, 559], [209, 565], [212, 565], [233, 526], [244, 566]]) },
+    3: { soundFrameCount: 380, soundEvents: ougiSoundEvents("weapon20Ougi3Chid", [[3, 451], [17, 467], [32, 514], [33, 515], [36, 514], [41, 516], [42, 517], [46, 314], [48, 518], [52, 519], [55, 518], [58, 520], [90, 514], [93, 514], [103, 523], [104, 309], [111, 514], [113, 467], [126, 531], [129, 531], [135, 531], [142, 531], [147, 531], [150, 531], [151, 531], [182, 531], [183, 531], [214, 531], [215, 531], [248, 531], [249, 537], [250, 531], [253, 531], [254, 537], [255, 531], [258, 531], [259, 537], [260, 531], [262, 514], [264, 531], [265, 537], [266, 531], [268, 514], [270, 531], [271, 537], [335, 538], [346, 545], [349, 545], [380, 520]]) },
+  },
+};
+
+Object.entries(ougiSoundOverrides).forEach(([weaponKey, slots]) => {
+  Object.entries(slots).forEach(([slot, config]) => {
+    const definition = ougiDefinitions[weaponKey]?.[slot];
+    if (!definition) return;
+    delete definition.soundKey;
+    delete definition.soundKeys;
+    delete definition.soundEvents;
+    delete definition.soundFrameCount;
+    Object.assign(definition, config);
+  });
+});
+
 const ougiFrames = Object.fromEntries(Object.entries(ougiDefinitions).map(([weaponKey, slots]) => [
   weaponKey,
   Object.fromEntries(Object.keys(slots).map((slot) => [slot, { right: [], left: [], up: [], down: [] }])),

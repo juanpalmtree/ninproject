@@ -1,4 +1,4 @@
-const defaultPlayerLevel = 99;
+const defaultPlayerLevel = 1;
 
 const levelExpRequirements = [
   0,
@@ -21,23 +21,36 @@ const levelExpRequirements = [
 
 const maxProgressionLevel = levelExpRequirements.length - 1;
 const defaultPlayerExp = levelExpRequirements[defaultPlayerLevel];
+const classUnlockLevel = 101;
+
+const progressionClasses = [
+  { id: "onmyoji", title: "Onmyoji", rankMarkFrame: 15 },
+  { id: "nightBlade", title: "Night Blade", rankMarkFrame: 14 },
+];
+
+const specialRankMarks = [
+  { id: "disciplinarian", title: "Disciplinarian", rankMarkFrame: 16 },
+  { id: "godfather", title: "Godfather", rankMarkFrame: 17 },
+];
 
 const rankTitleUnlocks = [
-  { level: 1, title: "Shoshinsha" },
-  { level: 8, title: "Genin" },
-  { level: 16, title: "Chunin" },
-  { level: 25, title: "Jonin" },
-  { level: 30, title: "Huurai Nin" },
-  { level: 35, title: "Yuushi" },
-  { level: 40, title: "Iga Ninja" },
-  { level: 50, title: "Rappa" },
-  { level: 60, title: "Anbu" },
-  { level: 70, title: "Kage-musha" },
-  { level: 80, title: "Huuma" },
-  { level: 90, title: "Kage-boushi" },
-  { level: 95, title: "Ninja Master" },
-  { level: 101, title: "Onmyoji or Night Blade" },
+  { level: 1, title: "Shoshinsha", rankMarkFrame: 1 },
+  { level: 8, title: "Genin", rankMarkFrame: 2 },
+  { level: 16, title: "Chunin", rankMarkFrame: 3 },
+  { level: 25, title: "Jonin", rankMarkFrame: 4 },
+  { level: 30, title: "Huurai Nin", rankMarkFrame: 5 },
+  { level: 35, title: "Yuushi", rankMarkFrame: 6 },
+  { level: 40, title: "Iga Ninja", rankMarkFrame: 7 },
+  { level: 50, title: "Rappa", rankMarkFrame: 8 },
+  { level: 60, title: "Anbu", rankMarkFrame: 9 },
+  { level: 70, title: "Kage-musha", rankMarkFrame: 10 },
+  { level: 80, title: "Huuma", rankMarkFrame: 11 },
+  { level: 90, title: "Kage-boushi", rankMarkFrame: 12 },
+  { level: 95, title: "Ninja Master", rankMarkFrame: 13 },
+  { level: 101, title: "Onmyoji or Night Blade", rankMarkFrame: 13 },
 ];
+
+const rankMarkAssetRoot = "assets/ui/rank-marks";
 
 const ninjutsuUnlocks = [
   { level: 7, name: "HealBall" },
@@ -95,9 +108,23 @@ function levelForExp(exp) {
   return level;
 }
 
+function normalizedClassBranch(branch) {
+  const normalizedBranch = String(branch || "").toLowerCase().replace(/[^a-z]/g, "");
+  return progressionClasses.find((progressionClass) => (
+    progressionClass.id.toLowerCase() === normalizedBranch
+    || progressionClass.title.toLowerCase().replace(/[^a-z]/g, "") === normalizedBranch
+  ))?.title || "";
+}
+
+function classForLevel(level, branch = "") {
+  const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
+  return normalizedLevel >= classUnlockLevel ? normalizedClassBranch(branch) : "";
+}
+
 function rankForLevel(level, branch = "") {
   const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
-  if (normalizedLevel >= 101 && branch) return branch;
+  const classTitle = classForLevel(normalizedLevel, branch);
+  if (classTitle) return classTitle;
   let rank = rankTitleUnlocks[0].title;
   for (const unlock of rankTitleUnlocks) {
     if (normalizedLevel >= unlock.level) rank = unlock.title;
@@ -105,15 +132,38 @@ function rankForLevel(level, branch = "") {
   return rank;
 }
 
+function rankMarkFrameForLevel(level, branch = "") {
+  const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
+  const classTitle = classForLevel(normalizedLevel, branch);
+  if (classTitle) {
+    return progressionClasses.find((progressionClass) => progressionClass.title === classTitle)?.rankMarkFrame || 1;
+  }
+  let rankMarkFrame = rankTitleUnlocks[0].rankMarkFrame;
+  for (const unlock of rankTitleUnlocks) {
+    if (normalizedLevel >= unlock.level) rankMarkFrame = unlock.rankMarkFrame;
+  }
+  return rankMarkFrame;
+}
+
+function rankMarkPathForLevel(level, branch = "") {
+  return `${rankMarkAssetRoot}/${rankMarkFrameForLevel(level, branch)}.svg`;
+}
+
 function progressionSummaryForExp(exp, branch = "") {
   const level = levelForExp(exp);
   const currentExp = Math.max(0, Math.floor(Number(exp) || 0));
+  const classTitle = classForLevel(level, branch);
   const currentLevelExp = expForLevel(level);
   const nextLevelExp = level < maxProgressionLevel ? expForLevel(level + 1) : null;
   return {
     exp: currentExp,
     level,
-    rankTitle: rankForLevel(level, branch),
+    rankTitle: rankForLevel(level, classTitle),
+    rankMarkFrame: rankMarkFrameForLevel(level, classTitle),
+    rankMarkPath: rankMarkPathForLevel(level, classTitle),
+    classBranch: classTitle,
+    classTitle,
+    classChoiceAvailable: level >= classUnlockLevel && !classTitle,
     currentLevelExp,
     nextLevelExp,
     expIntoLevel: Math.max(0, currentExp - currentLevelExp),
@@ -121,10 +171,52 @@ function progressionSummaryForExp(exp, branch = "") {
   };
 }
 
+function normalizedProgressionProfile(profile = {}) {
+  const progression = progressionSummaryForExp(profile.exp, profile.classBranch);
+  return {
+    ...profile,
+    exp: progression.exp,
+    level: progression.level,
+    rankTitle: progression.rankTitle,
+    rankMarkFrame: progression.rankMarkFrame,
+    rankMarkPath: progression.rankMarkPath,
+    classBranch: progression.classBranch,
+    classTitle: progression.classTitle,
+  };
+}
+
+function syncProgressionProfile(profile = {}) {
+  return Object.assign(profile, normalizedProgressionProfile(profile));
+}
+
+function awardExpToProfile(profile = {}, amount = 0) {
+  const previous = progressionSummaryForExp(profile.exp, profile.classBranch);
+  const expAwarded = Math.max(0, Math.floor(Number(amount) || 0));
+  profile.exp = previous.exp + expAwarded;
+  const current = syncProgressionProfile(profile);
+  return {
+    ...progressionSummaryForExp(current.exp, current.classBranch),
+    expAwarded,
+    previousLevel: previous.level,
+    levelsGained: current.level - previous.level,
+    profile: current,
+  };
+}
+
+function selectClassForProfile(profile = {}, branch = "") {
+  const progression = progressionSummaryForExp(profile.exp, profile.classBranch);
+  const classBranch = normalizedClassBranch(branch);
+  if (progression.level < classUnlockLevel || !classBranch) return false;
+  profile.classBranch = classBranch;
+  syncProgressionProfile(profile);
+  return true;
+}
+
 function ninjutsuUnlocksForLevel(level, branch = "") {
   const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
+  const classBranch = normalizedClassBranch(branch);
   return ninjutsuUnlocks.filter((unlock) => (
     normalizedLevel >= unlock.level
-    && (!unlock.branch || !branch || unlock.branch === branch)
+    && (!unlock.branch || !classBranch || unlock.branch === classBranch)
   ));
 }

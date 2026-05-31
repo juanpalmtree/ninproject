@@ -44,8 +44,49 @@ canvas {
   cursor: crosshair;
 }
 
+.app-flow-mode canvas,
 .room-mode canvas {
   display: none;
+}
+
+.app-flow-mode .hud {
+  display: none;
+}
+
+.app-flow-mode .room-screen {
+  display: none;
+}
+
+.app-flow-screen {
+  display: none;
+  width: min(calc(100vw - 12px), calc((100vh - 12px) * 1.4117647));
+  aspect-ratio: 960 / 680;
+  position: relative;
+  overflow: hidden;
+  color: #f7f4df;
+  background:
+    linear-gradient(rgba(8, 18, 20, .12), rgba(8, 18, 20, .12)),
+    radial-gradient(circle at 24% 32%, rgba(88, 160, 172, .55), transparent 24%),
+    linear-gradient(135deg, #1b3b32, #142420 42%, #101721);
+  border: 3px solid #0a6d79;
+  box-shadow: inset 0 0 0 2px #3d1714;
+}
+
+.login-screen {
+  background:
+    linear-gradient(90deg, rgba(4, 12, 20, .16), rgba(4, 12, 20, .08) 48%, rgba(4, 12, 20, .04)),
+    url("assets/ui/unity-reference/nindou3background.jpg") center / cover no-repeat;
+}
+
+.character-select-screen,
+.character-create-screen {
+  background:
+    linear-gradient(90deg, rgba(17, 5, 20, .32), rgba(16, 6, 28, .10) 44%, rgba(10, 7, 20, .26)),
+    url("assets/ui/unity-reference/nindoucharacterbackground.jpg") center / cover no-repeat;
+}
+
+.app-flow-screen.active {
+  display: block;
 }
 
 .room-screen {
@@ -289,19 +330,19 @@ body:not(.room-mode) .room-screen {
 
 .room-avatar {
   position: absolute;
-  left: 20px;
-  top: 78px;
-  width: 56px;
-  height: 54px;
+  left: 28px;
+  top: 86px;
+  width: 44px;
+  height: auto;
   image-rendering: auto;
 }
 
 .room-avatar-eye {
   position: absolute;
-  left: 30px;
-  top: 94px;
-  width: 35px;
-  height: 15px;
+  left: 35px;
+  top: 100px;
+  width: 26px;
+  height: 12px;
   image-rendering: auto;
   pointer-events: none;
 }
@@ -719,6 +760,576 @@ button:hover {
   filter: brightness(1.12);
 }
 
+.flow-panel,
+.world-map {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(760px, calc(100% - 72px));
+  min-height: 320px;
+  transform: translate(-50%, -50%);
+  padding: 24px;
+  background: rgba(7, 14, 18, .86);
+  border: 3px solid #071014;
+  box-shadow: inset 0 0 0 2px #5daeb7, 0 14px 36px rgba(0, 0, 0, .45);
+}
+
+.flow-panel.login-panel {
+  left: 74px;
+  top: auto;
+  bottom: 58px;
+  width: 376px;
+  min-height: 236px;
+  transform: none;
+  background: rgba(8, 18, 28, .78);
+  border-color: #0d1a21;
+  box-shadow: inset 0 0 0 2px rgba(236, 246, 255, .58), 0 14px 34px rgba(0, 0, 0, .34);
+}
+
+.flow-panel.wide {
+  width: min(820px, calc(100% - 72px));
+}
+
+.flow-brand {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.flow-brand span {
+  color: #ff3d35;
+  font-size: 68px;
+  font-weight: 900;
+  line-height: .9;
+  transform: rotate(-11deg);
+  transform-origin: left center;
+  letter-spacing: 0;
+  text-shadow: 3px 3px 0 #111, 0 0 10px rgba(255, 43, 35, .45);
+}
+
+.flow-brand strong,
+.flow-header strong {
+  color: #e8ff5a;
+  font-size: 28px;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #09121a;
+}
+
+.character-select-screen .flow-panel.wide,
+.character-create-screen .flow-panel.wide {
+  top: 52%;
+  background: rgba(7, 18, 24, .82);
+  border-color: #11181c;
+  box-shadow: inset 0 0 0 2px rgba(224, 251, 255, .52), 0 18px 42px rgba(0, 0, 0, .4);
+}
+
+.flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.flow-header div {
+  display: grid;
+  gap: 6px;
+}
+
+.flow-header span,
+.flow-field span {
+  color: #95e4ed;
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.flow-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.flow-field input,
+.flow-field select {
+  height: 40px;
+  padding: 0 12px;
+  border: 2px solid #071014;
+  background: #eaf4d9;
+  color: #111817;
+  font: inherit;
+  font-weight: 900;
+}
+
+.flow-primary-btn {
+  min-width: 180px;
+  height: 42px;
+  border: 2px solid #151007;
+  border-radius: 4px;
+  background: linear-gradient(#f7e6ad, #c89138);
+  color: #21160b;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.character-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.character-card {
+  position: relative;
+  min-height: 244px;
+  padding: 14px 14px 12px;
+  display: grid;
+  grid-template-rows: 104px auto auto auto 34px;
+  justify-items: center;
+  gap: 7px;
+  background:
+    linear-gradient(rgba(209, 250, 250, .2), rgba(20, 109, 118, .24)),
+    linear-gradient(#8ec6c2, #61aeb2 54%, #1b5c65);
+  border: 3px solid #071014;
+  box-shadow: inset 0 -22px 32px rgba(0, 0, 0, .24), 0 4px 0 rgba(255, 255, 255, .18);
+  color: #082026;
+}
+
+.character-avatar-wrap,
+.create-preview,
+.common-player-card {
+  position: relative;
+}
+
+.base-avatar {
+  /* Change this from 1 to 1.5 to make the entire ninja 50% bigger, or 2 for double size! */
+  --avatar-scale: 1.5; 
+  
+  position: relative;
+  width: 64px;
+  height: 76px;
+  
+  /* This uses your scale variable to blow up the entire component uniformly */
+  transform: scale(var(--avatar-scale));
+  
+  /* Changing this to 'bottom center' ensures the ninja grows upward from its feet, */
+  /* which keeps it perfectly grounded on your background box. */
+  transform-origin: bottom center;
+}
+
+.base-avatar-body-img,
+.base-avatar-dress-img,
+.base-avatar-hair-img,
+.base-avatar-hat-img,
+.base-avatar-eyes-img {
+  box-sizing: border-box;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+.character-card strong,
+.common-player-card strong {
+  font-size: 22px;
+  line-height: 1;
+  color: #f6fff6;
+  text-shadow: 2px 2px 0 #073237;
+}
+
+.character-card span,
+.common-player-card span {
+  color: #f8eeb7;
+  font-weight: 900;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, .55);
+}
+
+.character-card-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.character-card-rank-mark {
+  width: 22px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.character-card small {
+  min-height: 18px;
+  color: #14241d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.character-card.empty {
+  background:
+    linear-gradient(rgba(238, 248, 241, .12), rgba(238, 248, 241, .12)),
+    linear-gradient(#314348, #18272e);
+  color: #eff7ec;
+}
+
+.character-card.empty .empty-slot-mark {
+  width: 86px;
+  height: 86px;
+  display: grid;
+  place-items: center;
+  align-self: end;
+  border: 3px solid #061116;
+  border-radius: 7px;
+  background: linear-gradient(#f2e8b9, #bd9350);
+  color: #15120d;
+  font-size: 46px;
+  font-weight: 900;
+}
+
+.create-character-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.create-preview {
+  height: 280px;
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(rgba(255, 255, 255, .78), rgba(216, 244, 234, .82)),
+    url("assets/ui/unity-reference/nindoucharacterbackground.jpg") center / cover no-repeat;
+  border: 3px solid #071014;
+  overflow: hidden;
+}
+
+.create-base-avatar {
+  --avatar-scale: 1.85;
+}
+
+.create-avatar-preview {
+  width: calc(64px * 1.85);
+  height: calc(76px * 1.85);
+  display: grid;
+  place-items: center;
+}
+
+.world-map {
+  width: min(860px, calc(100% - 72px));
+  min-height: 520px;
+  background: #1e5a49;
+}
+
+.nekomata-map-ui {
+  position: absolute;
+  inset: 0;
+  background: #09080b;
+}
+
+.nekomata-map-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.nekomata-location-readout {
+  position: absolute;
+  left: 1.2%;
+  top: 2.1%;
+  width: 27.2%;
+  height: 5.7%;
+  display: grid;
+  grid-template-columns: 38% minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 3px solid #151313;
+  border-radius: 9px 9px 9px 4px;
+  background: linear-gradient(90deg, rgba(255, 214, 235, .95), rgba(221, 240, 251, .95));
+  box-shadow: 0 2px 0 rgba(255, 255, 255, .38) inset, 0 2px 0 rgba(0, 0, 0, .32);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.nekomata-location-readout span {
+  min-width: 0;
+  color: #151010;
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.nekomata-location-readout strong {
+  min-width: 0;
+  color: #d9412e;
+  font-size: 22px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 1px 1px 0 #fff5ec, 0 0 5px rgba(180, 42, 30, .45);
+}
+
+.nekomata-return-zone,
+.nekomata-location-zone {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  z-index: 5;
+}
+
+.nekomata-return-zone {
+  left: 29.2%;
+  top: 2.1%;
+  width: 4.3%;
+  height: 6.2%;
+}
+
+.nekomata-location-zone {
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  border-radius: 8px;
+}
+
+.nekomata-location-zone:hover,
+.nekomata-location-zone:focus-visible,
+.nekomata-return-zone:hover,
+.nekomata-return-zone:focus-visible {
+  outline: 3px solid rgba(255, 246, 99, .95);
+  outline-offset: 2px;
+  background: rgba(255, 246, 99, .12);
+  cursor: pointer;
+}
+
+.nekomata-location-zone.coming-soon-pulse {
+  animation: locationPulse 420ms ease-out;
+}
+
+@keyframes locationPulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 246, 99, .88); }
+  100% { box-shadow: 0 0 0 16px rgba(255, 246, 99, 0); }
+}
+
+.common-room-body {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.common-player-card {
+  min-height: 250px;
+  padding: 22px 14px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  background: linear-gradient(#a8d8d4, #d9f1e7);
+  border: 3px solid #071014;
+  color: #14201e;
+}
+
+.common-avatar-slot {
+  width: 120px;
+  height: 144px;
+  display: grid;
+  place-items: center;
+}
+
+.common-base-avatar {
+  --avatar-scale: 1.65;
+}
+
+.common-chat-preview {
+  padding: 18px;
+  min-height: 250px;
+  background: #f2ddec;
+  border: 3px solid #071014;
+  color: #391f2a;
+  font-weight: 800;
+}
+
+.common-room-body .flow-primary-btn {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+.village-hall-screen {
+  position: relative;
+  width: 800px;
+  height: 600px;
+  overflow: hidden;
+  background: #05080a;
+}
+
+.village-hall-screen .vector-layer {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.village-profile-panel {
+  position: absolute;
+  left: 30px;
+  top: 88px;
+  width: 196px;
+  min-height: 116px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(8, 24, 30, .78);
+  border: 2px solid rgba(222, 250, 248, .72);
+  color: #effff7;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .28);
+}
+
+.village-profile-avatar {
+  width: 76px;
+  height: 90px;
+  display: grid;
+  place-items: center;
+}
+
+.village-profile-avatar .base-avatar {
+  --avatar-scale: 1.15;
+}
+
+.village-profile-copy {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.village-profile-copy strong {
+  color: #f6fff6;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 2px 2px 0 #073237;
+  white-space: nowrap;
+}
+
+.village-profile-rank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.village-profile-rank-mark {
+  width: 24px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.village-profile-rank span {
+  color: #f8eeb7;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.village-hall-screen .room-list-panel {
+  position: absolute;
+  left: 545px;
+  top: 50px;
+  width: 235px;
+  height: 450px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 4px 6px 4px 4px;
+  scrollbar-color: rgba(255, 232, 118, .75) rgba(0, 0, 0, .2);
+}
+
+.village-hall-screen .room-card {
+  flex: 0 0 auto;
+  min-height: 54px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, .15);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background .2s;
+}
+
+.village-hall-screen .room-card:hover,
+.village-hall-screen .room-card:focus-visible {
+  background: rgba(255, 255, 255, .18);
+  outline: 2px solid #fff16f;
+  outline-offset: 1px;
+}
+
+.village-hall-screen .room-card strong,
+.village-hall-screen .room-card span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.village-hall-screen .room-card strong {
+  color: #ffd700;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.village-hall-screen .room-card span {
+  color: rgba(255, 255, 255, .7);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.village-hall-screen .room-card em {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .4);
+  color: #fff;
+  font-size: 12px;
+  font-style: normal;
+  text-align: center;
+}
+
+.village-map-button {
+  position: absolute;
+  left: 24px;
+  bottom: 20px;
+  z-index: 5;
+  min-width: 118px;
+  height: 36px;
+  border: 2px solid #171008;
+  border-radius: 5px;
+  background: linear-gradient(#f8e6a8, #bd7d2f);
+  color: #1f1205;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 2px 0 rgba(0, 0, 0, .34);
+}
+
+.village-map-button:hover,
+.village-map-button:focus-visible {
+  filter: brightness(1.1);
+  outline: 2px solid #fff16f;
+  outline-offset: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -773,12 +1384,24 @@ button:hover {
   position: absolute;
   left: 0;
   top: 0;
-  width: 92px;
-  height: 92px;
-  padding: 10px;
+  box-sizing: border-box;
+  width: 90px;
+  height: 90px;
+  padding: 16px 15px 18px;
+  object-fit: contain;
   background: #333;
   border: 5px solid #9b9a8a;
   box-shadow: inset 0 0 0 5px #1c1c1c;
+}
+
+.ninju-editor-avatar-eye {
+  position: absolute;
+  left: 30px;
+  top: 36px;
+  width: 26px;
+  height: 12px;
+  image-rendering: auto;
+  pointer-events: none;
 }
 
 .ninju-editor-stats {
@@ -851,6 +1474,15 @@ button:hover {
   font-size: 86px;
   line-height: 1;
   transform: rotate(-12deg);
+}
+
+.ninju-editor-rank-mark {
+  position: absolute;
+  right: 174px;
+  top: 80px;
+  width: 54px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .ninju-editor-board {
@@ -1022,18 +1654,18 @@ button:hover {
 
 .eye-editor-preview-avatar {
   position: absolute;
-  left: 6px;
-  top: 6px;
-  width: 56px;
-  height: 54px;
+  left: 14px;
+  top: 10px;
+  width: 44px;
+  height: auto;
 }
 
 .eye-editor-preview-eyes {
   position: absolute;
-  left: 16px;
-  top: 22px;
-  width: 35px;
-  height: 15px;
+  left: 21px;
+  top: 24px;
+  width: 26px;
+  height: 12px;
 }
 
 .room-ninju-editor[data-mode="eyes"] .ninju-editor-list {
@@ -1165,4 +1797,511 @@ button:hover {
   display: flex;
   justify-content: center;
   gap: 28px;
+}
+/* Instantly hides all layout debugging borders across the avatar */
+.base-avatar img, 
+.base-avatar div, 
+[class^="base-avatar-"] {
+    border: none !important;
+    outline: none !important;
+}
+
+/* Authentic common-room pre-game test layout */
+.room-screen {
+  width: min(calc(100vw - 12px), calc((100vh - 12px) * 1.3333333));
+  aspect-ratio: 800 / 600;
+}
+
+.room-frame {
+  width: 100%;
+  height: 100%;
+  background:
+    url("dev_assets/common_room_1.4_no_text.svg") left top / 100% 100% no-repeat,
+    #000;
+}
+
+.room-topbar {
+  left: 0;
+  top: 0;
+  right: auto;
+  width: 800px;
+  height: 600px;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.room-rule-toggle,
+.room-title-cell {
+  display: none;
+}
+
+.player-grid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: auto;
+  width: 800px;
+  height: 600px;
+  display: block;
+  transform-origin: top left;
+}
+
+.room-player-card {
+  position: absolute;
+  width: 130px;
+  height: 210px;
+  padding: 0;
+  background: none;
+  overflow: visible;
+}
+
+.room-player-card[data-player-index="1"] { left: 58px; top: 58px; }
+.room-player-card[data-player-index="2"] { left: 191px; top: 58px; }
+.room-player-card[data-player-index="3"] { left: 324px; top: 58px; }
+.room-player-card[data-player-index="4"] { left: 457px; top: 58px; }
+.room-player-card[data-player-index="5"] { left: 58px; top: 278px; }
+.room-player-card[data-player-index="6"] { left: 191px; top: 278px; }
+.room-player-card[data-player-index="7"] { left: 324px; top: 278px; }
+.room-player-card[data-player-index="8"] { left: 457px; top: 278px; }
+
+.room-player-card::before {
+  content: "";
+  position: absolute;
+  left: 2.84px;
+  top: .87px;
+  width: 127.54px;
+  height: 210.18px;
+  background: url("assets/runtime/ui_vectors/lobbies/shapes/shapes/1104.svg") center / 100% 100% no-repeat;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.room-player-card::after {
+  content: "";
+  position: absolute;
+  left: 4.94px;
+  top: 21.93px;
+  width: 121.67px;
+  height: 159.21px;
+  background: url("assets/runtime/ui_vectors/lobbies/shapes/sprites/DefineSprite_1107/1.svg") center / 100% 100% no-repeat;
+  z-index: 52;
+  pointer-events: none;
+}
+
+.room-player-card:not(.active-slot)::before {
+  left: 0;
+  top: 0;
+  width: 130px;
+  height: 210px;
+  background: url("assets/runtime/ui_vectors/lobbies/shapes/sprites/DefineSprite_1143/1.svg") center / contain no-repeat;
+  opacity: .72;
+}
+
+.room-player-card:not(.active-slot)::after {
+  display: none;
+}
+
+.room-player-card:not(.active-slot) .room-slot-add {
+  display: block;
+  z-index: 90;
+}
+
+.room-player-card:not(.active-slot) .room-rank-emoji,
+.room-player-card:not(.active-slot) .room-rank-text,
+.room-player-card:not(.active-slot) .room-info-btn,
+.room-player-card:not(.active-slot) .room-weapon-preview,
+.room-player-card:not(.active-slot) .room-custom-avatar {
+  display: none;
+}
+
+.room-slot-add {
+  width: 76px;
+  height: 30px;
+  font-size: 20px;
+}
+
+.room-slot-remove {
+  right: 2px;
+  top: 24px;
+  width: 20px;
+  height: 20px;
+  z-index: 95;
+}
+
+.room-player-card[data-slot="1"] .room-slot-remove {
+  display: none;
+}
+
+.room-player-card.blue .room-name::before,
+.room-player-card.grey .room-name::before {
+  content: "";
+  position: absolute;
+  left: 2.81px;
+  top: -184.84px;
+  width: 25.14px;
+  height: 18.86px;
+  background: url("assets/runtime/ui_vectors/lobbies/shapes/shapes/1135.svg") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.room-player-card.grey .room-name::before {
+  background-image: url("assets/runtime/ui_vectors/lobbies/shapes/shapes/1136.svg");
+}
+
+.room-name {
+  position: absolute;
+  left: 2.51px;
+  top: 189.61px;
+  width: 126.28px;
+  height: 21.53px;
+  z-index: 39;
+  padding: 0 8px;
+  background: url("assets/runtime/ui_vectors/lobbies/shapes/shapes/671.svg") center / 100% 100% no-repeat;
+  font-size: 12px;
+}
+
+.room-avatar {
+  left: 30.36px;
+  top: 47.98px;
+  width: 72.35px;
+  height: 101.8px;
+  object-fit: contain;
+  z-index: 53;
+}
+
+.room-avatar-eye {
+  left: 40px;
+  top: 72px;
+  width: 32px;
+  height: 15px;
+  z-index: 54;
+}
+
+.room-custom-avatar {
+  position: absolute;
+  left: 33px;
+  top: 86px;
+  width: 64px;
+  height: 76px;
+  z-index: 53;
+  pointer-events: none;
+}
+
+.room-base-avatar {
+  --avatar-scale: 1.25;
+}
+
+.room-player-card.uses-custom-avatar .room-avatar,
+.room-player-card.uses-custom-avatar .room-avatar-eye,
+.room-player-card.uses-ai-avatar .room-avatar-eye {
+  display: none;
+}
+
+.room-ready,
+.room-owner {
+  display: none;
+}
+
+.room-weapon-preview {
+  position: absolute;
+  left: -6.46px;
+  top: 100.46px;
+  width: 63.72px;
+  height: 85.49px;
+  object-fit: contain;
+  z-index: 55;
+  pointer-events: none;
+}
+
+.room-level {
+  display: block;
+  left: 38.17px;
+  top: 157.07px;
+  right: auto;
+  width: 58.8px;
+  height: 13.12px;
+  color: #10130d;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  z-index: 56;
+  overflow: hidden;
+}
+
+.room-rank-emoji {
+  position: absolute;
+  left: 7.4px;
+  top: 172.2px;
+  width: 18.2px;
+  height: 15.4px;
+  object-fit: contain;
+  z-index: 58;
+}
+
+.room-rank-text {
+  position: absolute;
+  left: 30.67px;
+  top: 173.3px;
+  width: 70.48px;
+  height: 15.13px;
+  color: #10130d;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  z-index: 57;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.room-info-btn {
+  position: absolute;
+  left: 100.8px;
+  top: 171.85px;
+  width: 25.14px;
+  height: 17.08px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  z-index: 70;
+  cursor: pointer;
+}
+
+.room-info-bg,
+.room-info-icon {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.room-info-bg {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.room-info-icon {
+  left: 10px;
+  top: 3.4px;
+  width: 4.7px;
+  height: 10.3px;
+}
+
+.room-hp-input {
+  left: 35px;
+  top: 145px;
+  bottom: auto;
+  width: 54px;
+  height: 19px;
+  font-size: 11px;
+  z-index: 92;
+}
+
+.room-control-select {
+  left: 3px;
+  top: 214px;
+  bottom: auto;
+  width: 58px;
+  height: 22px;
+  font-size: 11px;
+  z-index: 92;
+}
+
+.room-weapon-select {
+  left: 66px;
+  top: 214px;
+  right: auto;
+  bottom: auto;
+  width: 66px;
+  height: 22px;
+  font-size: 11px;
+  z-index: 92;
+}
+
+.team-tabs {
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 600px;
+  display: block;
+  gap: 0;
+  pointer-events: none;
+}
+
+.team-edit-btn {
+  left: 0;
+  top: 492px;
+  z-index: 96;
+  display: none;
+}
+
+.team-tab {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  writing-mode: horizontal-tb;
+  font-size: 0;
+  line-height: 1;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.team-tab.active,
+.team-tab:not(.active) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.team-tab.active {
+  left: 16.75px;
+  top: 65.5px;
+  width: 29.5px;
+  height: 91px;
+}
+
+.team-tab:not(.active) {
+  left: 15.5px;
+  top: 158.75px;
+  width: 29.5px;
+  height: 92.25px;
+}
+
+.team-tab::before {
+  white-space: pre-line;
+  color: #fff7df;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.04;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, .7);
+}
+
+.team-tab.active::before {
+  content: "B\A L\A U\A E";
+}
+
+.team-tab:not(.active)::before {
+  content: "G\A R\A A\A Y";
+}
+
+.battle-start-btn {
+  left: 340px;
+  top: 552px;
+  transform: none;
+  width: 94px;
+  height: 34px;
+  z-index: 90;
+  background: url("dev_assets/yellow_ready_button_tight.svg") center / contain no-repeat;
+}
+
+.battle-start-btn img {
+  display: none;
+}
+
+.room-leave-btn {
+  position: absolute;
+  left: 200.75px;
+  top: 552px;
+  width: 97.75px;
+  height: 32.75px;
+  z-index: 90;
+  border: 0;
+  background: url("dev_assets/exit_button_tight.svg") center / contain no-repeat;
+  pointer-events: auto;
+}
+
+.room-bottom-button-art {
+  display: none;
+}
+
+.room-exit-art {
+  left: 200.75px;
+  top: 552px;
+  width: 97.75px;
+  height: 32.75px;
+}
+
+.room-ready-art {
+  left: 340px;
+  top: 552px;
+  width: 94px;
+  height: 34px;
+}
+
+.mode-panel {
+  right: 15px;
+  top: 78px;
+  bottom: auto;
+  width: 190px;
+  height: 150px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  z-index: 40;
+}
+
+.mode-title,
+.mode-side {
+  display: none;
+}
+
+.mode-preview {
+  left: 18px;
+  top: 22px;
+  width: 145px;
+  height: 95px;
+  border-width: 3px;
+  font-size: 64px;
+}
+
+.chat-panel,
+.room-inventory-btn,
+.room-inventory-panel {
+  display: none;
+}
+
+.room-volume-panel {
+  left: 672px;
+  bottom: 34px;
+  width: 95px;
+  height: 185px;
+  z-index: 90;
+}
+
+.profile-editor-mode .player-grid,
+.profile-editor-mode .team-tabs,
+.profile-editor-mode .battle-start-btn,
+.profile-editor-mode .room-leave-btn,
+.profile-editor-mode .room-bottom-button-art,
+.profile-editor-mode .mode-panel,
+.profile-editor-mode .room-volume-panel {
+  visibility: hidden;
+}
+
+.profile-editor-mode .room-ninju-editor {
+  visibility: visible;
+  z-index: 220;
+}
+
+.profile-editor-readonly .ninju-editor-reset,
+.profile-editor-readonly #ninjuEditorSave {
+  display: none;
+}
+
+.profile-editor-readonly .ninju-editor-slots,
+.profile-editor-readonly .ninju-editor-list {
+  opacity: .72;
+}
+
+.profile-editor-readonly .ninju-slot-choice,
+.profile-editor-readonly .ninju-option,
+.profile-editor-readonly .eye-option {
+  cursor: default;
 }

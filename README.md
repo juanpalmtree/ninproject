@@ -83,6 +83,28 @@ Some controls and tuning are still prototype-level and may change as the project
 - Backup is a consumable item that restores SP to full.
 - Gold can be collected from hay objects and is stored on the player.
 
+## Exporting Ougi Assets
+
+The local Nindou source SWF dump belongs in:
+
+```text
+exports/nindou_exports/assets/
+```
+
+That folder is ignored by Git. Use the export helper to extract sprites and sounds into scratch space before choosing the runtime frames to copy into `assets/`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/export-ougi-assets.ps1 -Weapon 20 -Tier 2 -CleanOutput
+```
+
+Useful options:
+
+- `-ListOnly` shows which SWF files will be used.
+- `-RequireTierSwf` only accepts tier-specific files such as `nindou_weapon_20_2_TW.swf`.
+- `-Weapon 19,20 -Tier 1,2,3` exports multiple weapons and tiers.
+
+Scratch output goes to `exports/swf-extract/`, which is also ignored by Git.
+
 ## Working With Branches
 
 Use `main` as the shared branch for the group.

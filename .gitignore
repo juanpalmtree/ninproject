@@ -1,0 +1,26 @@
+.compare/
+exports/
+# Local Nindou 3 source SWF/assets dump used by export scripts. Keep the
+# extracted runtime assets committed separately under assets/.
+exports/nindou_exports/
+exports/swf-extract/
+lancode_reference/
+lancode-diff.txt
+lancode-code-diff.txt
+node_modules/
+Juan_Palma_Resume_extracted.txt
+docs/Juan_Palma_CGI_AI_Modernization_Resume_Draft.md
+*Resume*.pdf
+*Resume*.txt
+
+
+.codex_chrome_team_tab_test/
+.ffdec-home/
+tmp_*/
+tmp_*.xml
+tmp_*sheet.png
+tmp_avatar_dress_offsets.png
+hs_err_pid*.log
+.DS_Store
+tools/ffdec/
+assets/nin/**/*.swf

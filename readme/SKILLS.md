@@ -32,7 +32,7 @@ Use this guide when changing:
 - Weapons belong in `assets/weapon/`.
 - Weapon Ougi effects belong in `assets/ougi/`.
 - Jutsu assets belong in `assets/ninju/`.
-- Room UI assets belong in `assets/room-ui-selected/` or `assets/room-candidates/`.
+- Room UI assets belong in `assets/room-ui-selected/` or `assets/room-ui/`.
 
 ## Weapon Changes
 
@@ -71,7 +71,7 @@ Important files:
 - `game.en.html`
 - `style.css`
 - Room assets in `assets/room-ui-selected/`
-- Candidate room assets in `assets/room-candidates/`
+- Room UI source assets in `assets/room-ui/`
 
 The room should stay close to the original visual layout. Prefer real extracted assets over placeholder CSS when possible.
 

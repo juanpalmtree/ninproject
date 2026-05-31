@@ -1,4 +1,4 @@
-// Rule-mode profiles for modified and original balance values.
+// Rule-mode profiles for Nindou 3, modified Nindou 2, and original Nindou 2 values.
 // Future weapon / ninjutsu differences should be configured here.
 const modeRuleProfiles = {
   modified: {
@@ -150,13 +150,18 @@ const modeRuleProfiles = {
   },
 };
 
+// Nindou 3 is the project's active direction. It currently inherits the tuned
+// modified profile until a balance value needs to diverge explicitly.
+modeRuleProfiles.n3 = modeRuleProfiles.modified;
+
 function currentRuleModeKey() {
+  if (typeof state !== "undefined" && state?.ruleModeKey && modeRuleProfiles[state.ruleModeKey]) return state.ruleModeKey;
   if (typeof state !== "undefined" && state?.useOriginalMode) return "original";
-  return "modified";
+  return "n3";
 }
 
 function currentRuleProfile() {
-  return modeRuleProfiles[currentRuleModeKey()] || modeRuleProfiles.modified;
+  return modeRuleProfiles[currentRuleModeKey()] || modeRuleProfiles.n3;
 }
 
 function weaponDamageForMode(weaponKey, fallbackDamage) {

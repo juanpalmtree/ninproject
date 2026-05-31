@@ -1,10 +1,12 @@
 {
-  "name": "2-c-users-lane6-onedrive-desktop",
+  "name": "ninproject",
   "version": "1.0.0",
   "description": "",
-  "main": "game.js",
+  "main": "game.en.js",
   "scripts": {
-    "check": "node --check game.js"
+    "check": "node --check game.en.js",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
   },
   "keywords": [],
   "author": "",

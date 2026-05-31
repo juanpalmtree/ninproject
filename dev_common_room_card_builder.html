@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Common Room Unified Layout Builder</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --panel: #15191f;
+      --line: #3a4655;
+      --accent: #52b6ff;
+      --selected: #ffe15a;
+      --text: #edf4ff;
+      --muted: #9cadc1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: #0b0d11;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr 210px;
+      gap: 12px;
+      height: 100vh;
+      padding: 12px;
+    }
+
+    .toolbar,
+    .workspace-panel,
+    .output-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+      padding: 8px 12px;
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      min-width: 310px;
+      font-size: 17px;
+    }
+
+    .toolbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .toolbar input[type="range"] {
+      width: 130px;
+    }
+
+    .tool-button {
+      border: 1px solid #536173;
+      background: #263141;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .tool-button:hover {
+      border-color: var(--accent);
+    }
+
+    select {
+      max-width: 230px;
+      border: 1px solid #536173;
+      background: #101721;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+
+    .workspace-panel {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .zoom-shell {
+      transform-origin: top left;
+      width: 800px;
+      height: 600px;
+    }
+
+    .workspace {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid #334050;
+      border-radius: 4px;
+    }
+
+    .room-bg {
+      position: absolute;
+      inset: 0;
+      width: 800px;
+      height: 600px;
+      z-index: 0;
+      object-fit: fill;
+      pointer-events: none;
+    }
+
+    .grid-overlay,
+    .center-overlay,
+    .slot-guides {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .grid-overlay {
+      opacity: .65;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.22) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.22) 1px, transparent 1px);
+      background-size: var(--grid-size, 25px) var(--grid-size, 25px);
+    }
+
+    .center-overlay::before,
+    .center-overlay::after {
+      content: "";
+      position: absolute;
+      background: rgba(255, 225, 90, .7);
+    }
+
+    .center-overlay::before {
+      left: 50%;
+      top: 0;
+      width: 1px;
+      height: 100%;
+    }
+
+    .center-overlay::after {
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+    }
+
+    .slot-guide {
+      position: absolute;
+      border: 1px solid rgba(255, 225, 90, .85);
+      background: rgba(255, 225, 90, .08);
+    }
+
+    .slot-guides::after {
+      content: "Do not use black/right UI space";
+      position: absolute;
+      left: 590px;
+      top: 58px;
+      width: 195px;
+      height: 428px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 8px;
+      border: 1px dashed rgba(255, 80, 80, .85);
+      background: rgba(255, 0, 0, .08);
+      color: #ffb4b4;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .slot-guide::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, .72);
+      color: #ffe15a;
+      font-size: 10px;
+      line-height: 13px;
+    }
+
+    .dev-layer {
+      position: absolute;
+      z-index: 10;
+      min-width: 8px;
+      min-height: 8px;
+      border: 1px dashed rgba(82, 182, 255, .85);
+      background: rgba(82, 182, 255, .08);
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .dev-layer.selected {
+      z-index: 80;
+      border-color: var(--selected);
+      outline: 2px solid var(--selected);
+      outline-offset: 1px;
+    }
+
+    .layer-label {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 5;
+      max-width: 100%;
+      padding: 1px 4px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .76);
+      color: #fff;
+      font-size: 9px;
+      line-height: 13px;
+      pointer-events: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .layer-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .layer-content img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .text-preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      color: #0d1117;
+      line-height: 1;
+      text-shadow: 0 1px rgba(255,255,255,.35);
+    }
+
+    .name-preview {
+      background: #020406;
+      color: #dce6f2;
+      border-radius: 3px;
+      letter-spacing: .02em;
+      text-shadow: 0 1px #000;
+    }
+
+    .handle {
+      position: absolute;
+      right: -5px;
+      bottom: -5px;
+      z-index: 6;
+      width: 9px;
+      height: 9px;
+      border: 1px solid #0b0d11;
+      background: var(--selected);
+      cursor: nwse-resize;
+    }
+
+    .output-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      min-height: 0;
+      padding: 12px;
+    }
+
+    .output-panel label {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 6px;
+      min-height: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: 1px solid #415063;
+      border-radius: 6px;
+      background: #07090d;
+      color: #dbe9ff;
+      padding: 8px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="toolbar">
+      <h1>Common Room Unified Layout Builder</h1>
+      <label>
+        Zoom
+        <input id="zoomRange" type="range" min="75" max="200" value="100" step="5">
+        <span id="zoomValue">100%</span>
+      </label>
+      <label>
+        <input id="showGuides" type="checkbox" checked>
+        Show guides
+      </label>
+      <label>
+        <input id="showGrid" type="checkbox" checked>
+        Grid
+      </label>
+      <label>
+        Grid size
+        <input id="gridSize" type="range" min="10" max="100" value="25" step="5">
+        <span id="gridSizeValue">25px</span>
+      </label>
+      <label>
+        <input id="showSlotGuides" type="checkbox" checked>
+        8-slot boxes
+      </label>
+      <label>
+        <input id="showRoomBg" type="checkbox" checked>
+        Show 1.4 room reference
+      </label>
+      <label>
+        <input id="moveGroup" type="checkbox" checked>
+        Move player group
+      </label>
+      <label>
+        <input id="resizeGroup" type="checkbox" checked>
+        Resize player group
+      </label>
+      <label>
+        Layer
+        <select id="layerSelect"></select>
+      </label>
+      <button id="sendBackward" class="tool-button" type="button">Back</button>
+      <button id="bringForward" class="tool-button" type="button">Forward</button>
+      <button id="sendToBack" class="tool-button" type="button">To Back</button>
+      <button id="bringToFront" class="tool-button" type="button">To Front</button>
+      <button id="cloneEight" class="tool-button" type="button">Clone P1 to 8</button>
+      <button id="loadJson" class="tool-button" type="button">Load JSON</button>
+      <button id="copyJson" class="tool-button" type="button">Copy JSON</button>
+      <button id="resetLayout" class="tool-button" type="button">Reset</button>
+    </header>
+
+    <section class="workspace-panel">
+      <div class="panel-title">
+        <span>Single 800x600 working space</span>
+        <span>Drag, resize, arrow nudge, Shift+arrow = 10px</span>
+      </div>
+      <div id="zoomShell" class="zoom-shell">
+        <div id="workspace" class="workspace">
+          <img class="room-bg" src="dev_assets/common_room_1.4_no_text.svg" alt="">
+          <div id="gridOverlay" class="grid-overlay"></div>
+          <div id="centerOverlay" class="center-overlay"></div>
+          <div id="slotGuides" class="slot-guides"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="output-panel">
+      <label>
+        Live JSON Coordinate Matrix
+        <textarea id="outputMatrix" spellcheck="false"></textarea>
+      </label>
+      <label>
+        Selected Layer
+        <textarea id="selectedOutput" spellcheck="false"></textarea>
+      </label>
+    </section>
+  </main>
+
+  <script>
+    const ASSETS = {
+      roomBg: "dev_assets/common_room_1.4_no_text.svg",
+      originalRoomBg: "assets/runtime/ui_vectors/lobbies/shapes/sprites/DefineSprite_1253_TeamUpGraphics/1.4.svg",
+      cardBase1143: "assets/runtime/ui_vectors/lobbies/shapes/sprites/DefineSprite_1143/1.svg",
+      cardBase1107: "assets/runtime/ui_vectors/lobbies/shapes/sprites/DefineSprite_1107/1.svg",
+      teamBlue: "assets/room-ui/waiting_room/b_team.png",
+      teamGrey: "assets/room-ui/waiting_room/g_team.png",
+      toBlue: "assets/room-ui/waiting_room/to_blue.png",
+      toGrey: "assets/room-ui/waiting_room/to_grey.png",
+      readyStamp: "assets/room-ui/waiting_room/player_ready.png",
+      readyButton: "assets/room-ui/waiting_room/ready_button.png",
+      exitButton: "assets/room-ui-selected/room-leave-button.png",
+      infoButton: "assets/room-ui/waiting_room/info_button.png",
+      nameBar: "assets/room-ui/waiting_room/name_bar.png",
+      weaponRandom: "assets/room-ui/waiting_room/random_weapon.png",
+      weaponBlade: "assets/weapon/blade.png",
+      player: "assets/ninja-blue/idleDown.png",
+      shape1131: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1131.svg",
+      shape1132: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1132.svg",
+      shape1133: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1133.svg",
+      shape1135: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1135.svg",
+      shape1136: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1136.svg",
+      shape671: "assets/runtime/ui_vectors/lobbies/shapes/shapes/671.svg",
+      shape1104: "assets/runtime/ui_vectors/lobbies/shapes/shapes/1104.svg"
+    };
+
+    const PLAYER_SLOT_GUIDE = {
+      width: 130,
+      height: 210
+    };
+
+    const PLAYER_SLOT_ORIGINS = [
+      { player: 1, left: 58, top: 58 },
+      { player: 2, left: 191, top: 58 },
+      { player: 3, left: 324, top: 58 },
+      { player: 4, left: 457, top: 58 },
+      { player: 5, left: 58, top: 278 },
+      { player: 6, left: 191, top: 278 },
+      { player: 7, left: 324, top: 278 },
+      { player: 8, left: 457, top: 278 }
+    ];
+
+    const PLAYER_TEMPLATE = [
+      {
+        baseId: "cardBase1107",
+        label: "Extra SVG 1.svg / 1107",
+        type: "image",
+        asset: ASSETS.cardBase1107,
+        top: 79.93,
+        left: 62.94,
+        width: 121.67,
+        height: 159.21,
+        zIndex: 52
+      },
+      {
+        baseId: "playerSprite",
+        label: "Player sprite",
+        type: "image",
+        asset: ASSETS.player,
+        placeholder: true,
+        ungrouped: true,
+        top: 105.98,
+        left: 88.36,
+        width: 72.35,
+        height: 101.8,
+        zIndex: 53
+      },
+      {
+        baseId: "readyStamp",
+        label: "Ready stamp",
+        type: "image",
+        asset: ASSETS.readyStamp,
+        placeholder: true,
+        top: 141.22,
+        left: 128.77,
+        width: 70.06,
+        height: 82.67,
+        zIndex: 54
+      },
+      {
+        baseId: "weapon",
+        label: "Weapon",
+        type: "image",
+        asset: ASSETS.weaponBlade,
+        placeholder: true,
+        top: 158.46,
+        left: 51.54,
+        width: 63.72,
+        height: 85.49,
+        zIndex: 55
+      },
+      {
+        baseId: "levelText",
+        label: "Level text",
+        type: "text",
+        text: "LV. 114",
+        placeholder: true,
+        top: 215.07,
+        left: 96.17,
+        width: 58.8,
+        height: 13.12,
+        zIndex: 56
+      },
+      {
+        baseId: "teamColor",
+        label: "Team color",
+        type: "image",
+        asset: ASSETS.shape1135,
+        top: 62.77,
+        left: 63.32,
+        width: 25.14,
+        height: 18.86,
+        zIndex: 45
+      },
+      {
+        baseId: "rankEmoji",
+        label: "Rank emoji placeholder",
+        type: "image",
+        asset: ASSETS.shape1133,
+        placeholder: true,
+        top: 230.2,
+        left: 65.4,
+        width: 18.2,
+        height: 15.4,
+        zIndex: 58
+      },
+      {
+        baseId: "rankText",
+        label: "Rank text",
+        type: "text",
+        text: "Onmyoji",
+        placeholder: true,
+        top: 231.3,
+        left: 88.67,
+        width: 70.48,
+        height: 15.13,
+        zIndex: 57
+      },
+      {
+        baseId: "infoButtonBg",
+        label: "Info button background",
+        type: "image",
+        asset: ASSETS.shape1131,
+        top: 229.85,
+        left: 158.8,
+        width: 25.14,
+        height: 17.08,
+        zIndex: 58,
+        clickable: true
+      },
+      {
+        baseId: "infoButtonIcon",
+        label: "Info button i icon",
+        type: "image",
+        asset: ASSETS.shape1132,
+        top: 233.25,
+        left: 168.8,
+        width: 4.7,
+        height: 10.3,
+        zIndex: 59,
+        clickable: true
+      },
+      {
+        baseId: "nameBarVector",
+        label: "Name bar vector",
+        type: "image",
+        asset: ASSETS.shape671,
+        top: 247.61,
+        left: 60.51,
+        width: 126.28,
+        height: 21.53,
+        zIndex: 39
+      },
+      {
+        baseId: "characterBounds1104",
+        label: "1104.svg / character bounds",
+        type: "image",
+        asset: ASSETS.shape1104,
+        top: 58.87,
+        left: 60.84,
+        width: 127.54,
+        height: 210.18,
+        zIndex: 20
+      }
+    ];
+
+    const GLOBAL_LAYERS = [
+      {
+        id: "readyButtonArea",
+        baseId: "readyButtonArea",
+        label: "Ready button area",
+        type: "image",
+        asset: ASSETS.readyButton,
+        top: 551.07,
+        left: 331.67,
+        width: 114.07,
+        height: 34.84,
+        zIndex: 51,
+        ungrouped: true
+      },
+      {
+        id: "exitButtonArea",
+        baseId: "exitButtonArea",
+        label: "Exit button area",
+        type: "image",
+        asset: ASSETS.exitButton,
+        top: 553.49,
+        left: 213.67,
+        width: 68,
+        height: 30,
+        zIndex: 51,
+        ungrouped: true
+      }
+    ];
+
+    const DEFAULT_LAYERS = [
+      ...createPlayerLayers(1, 0, 0, PLAYER_TEMPLATE),
+      ...GLOBAL_LAYERS
+    ];
+
+    const workspace = document.querySelector("#workspace");
+    const outputMatrix = document.querySelector("#outputMatrix");
+    const selectedOutput = document.querySelector("#selectedOutput");
+    const zoomShell = document.querySelector("#zoomShell");
+    const zoomRange = document.querySelector("#zoomRange");
+    const zoomValue = document.querySelector("#zoomValue");
+    const showGuides = document.querySelector("#showGuides");
+    const showGrid = document.querySelector("#showGrid");
+    const gridSize = document.querySelector("#gridSize");
+    const gridSizeValue = document.querySelector("#gridSizeValue");
+    const showSlotGuides = document.querySelector("#showSlotGuides");
+    const showRoomBg = document.querySelector("#showRoomBg");
+    const moveGroup = document.querySelector("#moveGroup");
+    const resizeGroup = document.querySelector("#resizeGroup");
+    const gridOverlay = document.querySelector("#gridOverlay");
+    const centerOverlay = document.querySelector("#centerOverlay");
+    const slotGuides = document.querySelector("#slotGuides");
+    const layerSelect = document.querySelector("#layerSelect");
+    const sendBackward = document.querySelector("#sendBackward");
+    const bringForward = document.querySelector("#bringForward");
+    const sendToBack = document.querySelector("#sendToBack");
+    const bringToFront = document.querySelector("#bringToFront");
+    const cloneEight = document.querySelector("#cloneEight");
+    const loadJson = document.querySelector("#loadJson");
+    const copyJson = document.querySelector("#copyJson");
+    const resetLayout = document.querySelector("#resetLayout");
+
+    let selected = null;
+    let dragState = null;
+
+    function round(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function numberFromPx(value) {
+      return round(parseFloat(value || "0"));
+    }
+
+    function getZoom() {
+      return Number(zoomRange.value) / 100;
+    }
+
+    function renderSlotGuides() {
+      slotGuides.innerHTML = "";
+      PLAYER_SLOT_ORIGINS.forEach((slot) => {
+        const guide = document.createElement("div");
+        guide.className = "slot-guide";
+        guide.dataset.label = `P${slot.player}`;
+        guide.style.left = `${slot.left}px`;
+        guide.style.top = `${slot.top}px`;
+        guide.style.width = `${PLAYER_SLOT_GUIDE.width}px`;
+        guide.style.height = `${PLAYER_SLOT_GUIDE.height}px`;
+        slotGuides.appendChild(guide);
+      });
+    }
+
+    function createPlayerLayers(player, dx, dy, template = PLAYER_TEMPLATE) {
+      return template.map((layer) => ({
+        ...layer,
+        id: `p${player}_${layer.baseId || layer.id}`,
+        label: `P${player} ${layer.label}`,
+        player,
+        baseId: layer.baseId || layer.id,
+        asset: layer.baseId === "teamColor" ? teamColorAssetForPlayer(player) : layer.asset,
+        top: round(layer.top + dy),
+        left: round(layer.left + dx)
+      }));
+    }
+
+    function teamColorAssetForPlayer(player) {
+      return player <= 4 ? ASSETS.shape1135 : ASSETS.shape1136;
+    }
+
+    function cloneTemplateToEightPlayers() {
+      const templateLayers = getCurrentPlayerTemplate(1);
+      const firstSlot = PLAYER_SLOT_ORIGINS[0];
+      const expanded = PLAYER_SLOT_ORIGINS.flatMap((slot) => {
+        const dx = slot.left - firstSlot.left;
+        const dy = slot.top - firstSlot.top;
+        return createPlayerLayers(slot.player, dx, dy, templateLayers);
+      });
+      setLayers([...expanded, ...getGlobalLayers()]);
+    }
+
+    function makeLayer(layer) {
+      const el = document.createElement("div");
+      el.className = "dev-layer";
+      el.dataset.layerId = layer.id;
+      el.dataset.label = layer.label;
+      el.dataset.type = layer.type;
+      if (layer.player) el.dataset.player = String(layer.player);
+      if (layer.baseId) el.dataset.baseId = layer.baseId;
+      if (layer.placeholder) el.dataset.placeholder = "true";
+      if (layer.ungrouped) el.dataset.ungrouped = "true";
+      if (layer.clickable) el.dataset.clickable = "true";
+      if (layer.asset) el.dataset.asset = layer.asset;
+      if (layer.text) el.dataset.text = layer.text;
+      if (layer.className) el.dataset.className = layer.className;
+      el.style.left = `${layer.left}px`;
+      el.style.top = `${layer.top}px`;
+      el.style.width = `${layer.width}px`;
+      el.style.height = `${layer.height}px`;
+      el.style.zIndex = String(layer.zIndex || 10);
+
+      const label = document.createElement("span");
+      label.className = "layer-label";
+      label.textContent = layer.label;
+      el.appendChild(label);
+
+      const content = document.createElement("div");
+      content.className = "layer-content";
+      if (layer.type === "image") {
+        const img = document.createElement("img");
+        img.src = layer.asset;
+        img.alt = "";
+        content.appendChild(img);
+      } else {
+        const text = document.createElement("div");
+        text.className = `text-preview ${layer.className || ""}`.trim();
+        text.textContent = layer.text;
+        content.appendChild(text);
+      }
+      el.appendChild(content);
+
+      const handle = document.createElement("span");
+      handle.className = "handle";
+      handle.dataset.handle = "resize";
+      el.appendChild(handle);
+
+      workspace.appendChild(el);
+      return el;
+    }
+
+    function reset() {
+      setLayers(DEFAULT_LAYERS);
+    }
+
+    function setLayers(layers) {
+      workspace.querySelectorAll(".dev-layer").forEach((el) => el.remove());
+      layers.forEach(makeLayer);
+      refreshLayerSelect();
+      selectElement(workspace.querySelector(".dev-layer"));
+      updateOutput();
+    }
+
+    function selectElement(el) {
+      document.querySelectorAll(".selected").forEach((node) => node.classList.remove("selected"));
+      selected = el;
+      if (selected) selected.classList.add("selected");
+      if (selected && layerSelect.value !== selected.dataset.layerId) {
+        layerSelect.value = selected.dataset.layerId;
+      }
+      updateOutput();
+    }
+
+    function getElementData(el) {
+      const data = {
+        id: el.dataset.layerId,
+        label: el.dataset.label,
+        type: el.dataset.type,
+        player: el.dataset.player ? Number(el.dataset.player) : undefined,
+        baseId: el.dataset.baseId || undefined,
+        placeholder: el.dataset.placeholder === "true" || undefined,
+        ungrouped: el.dataset.ungrouped === "true" || undefined,
+        clickable: el.dataset.clickable === "true" || undefined,
+        top: numberFromPx(el.style.top),
+        left: numberFromPx(el.style.left),
+        width: numberFromPx(el.style.width),
+        height: numberFromPx(el.style.height),
+        zIndex: Number(el.style.zIndex || 10)
+      };
+      Object.keys(data).forEach((key) => data[key] === undefined && delete data[key]);
+      if (el.dataset.asset) data.asset = el.dataset.asset;
+      if (el.dataset.text) data.text = el.dataset.text;
+      return data;
+    }
+
+    function normalizeLoadedLayer(layer, index) {
+      const fallbackBaseId = layer.baseId || layer.id || `layer${index + 1}`;
+      const baseId = fallbackBaseId.replace(/^p\d+_/, "");
+      const isGlobal = baseId === "readyButtonArea" || baseId === "exitButtonArea";
+      const player = isGlobal ? undefined : layer.player || parsePlayerFromId(layer.id) || 1;
+      const normalizedId = isGlobal ? baseId : layer.id || `p${player}_${baseId}`;
+      const normalizedLabel = isGlobal
+        ? layer.label || (baseId === "readyButtonArea" ? "Ready button area" : "Exit button area")
+        : layer.label || `P${player} ${baseId}`;
+      return {
+        ...layer,
+        id: normalizedId,
+        label: normalizedLabel,
+        player,
+        baseId: baseId === "rankIcon" ? "teamColor" : baseId,
+        asset: baseId === "rankIcon" || baseId === "teamColor" ? teamColorAssetForPlayer(player || 1) : layer.asset,
+        ungrouped: layer.ungrouped || isGlobal || baseId === "playerSprite",
+        zIndex: layer.zIndex || 10
+      };
+    }
+
+    function parsePlayerFromId(id = "") {
+      const match = String(id).match(/^p(\d+)_/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function getCurrentPlayerTemplate(player) {
+      const layers = Array.from(workspace.querySelectorAll(".dev-layer"))
+        .map(getElementData)
+        .filter((layer) => layer.player === player);
+      const source = layers.length ? layers : Array.from(workspace.querySelectorAll(".dev-layer")).map(getElementData).filter((layer) => layer.player);
+      return source.map((layer) => ({
+        ...layer,
+        id: undefined,
+        player: undefined,
+        baseId: layer.baseId || layer.id.replace(/^p\d+_/, ""),
+        label: layer.label.replace(/^P\d+\s+/, "")
+      }));
+    }
+
+    function getPlayerOrigin(layers) {
+      const frame = layers.find((layer) => layer.baseId === "cardBase1107") || layers[0];
+      return {
+        left: frame?.left || 0,
+        top: frame?.top || 0
+      };
+    }
+
+    function getGlobalLayers() {
+      const layers = Array.from(workspace.querySelectorAll(".dev-layer"))
+        .map(getElementData)
+        .filter((layer) => !layer.player);
+      return layers.length ? layers : GLOBAL_LAYERS;
+    }
+
+    function getMatrix() {
+      return {
+        workspace: {
+          width: 800,
+          height: 600,
+          backgroundAsset: ASSETS.roomBg
+        },
+        layers: Array.from(workspace.querySelectorAll(".dev-layer")).map(getElementData)
+      };
+    }
+
+    function updateOutput() {
+      outputMatrix.value = JSON.stringify(getMatrix(), null, 2);
+      selectedOutput.value = selected ? JSON.stringify(getElementData(selected), null, 2) : "";
+    }
+
+    function refreshLayerSelect() {
+      const current = selected?.dataset.layerId || "";
+      layerSelect.innerHTML = "";
+      const layers = Array.from(workspace.querySelectorAll(".dev-layer"))
+        .sort((a, b) => Number(a.style.zIndex || 10) - Number(b.style.zIndex || 10));
+      layers.forEach((el) => {
+        const option = document.createElement("option");
+        option.value = el.dataset.layerId;
+        option.textContent = `${el.style.zIndex || 10} - ${el.dataset.label}`;
+        layerSelect.appendChild(option);
+      });
+      if (current) layerSelect.value = current;
+    }
+
+    function selectedZ() {
+      return selected ? Number(selected.style.zIndex || 10) : 10;
+    }
+
+    function setSelectedZ(zIndex) {
+      if (!selected) return;
+      selected.style.zIndex = String(Math.max(1, Math.min(999, zIndex)));
+      refreshLayerSelect();
+      updateOutput();
+    }
+
+    function layerZIndexes() {
+      return Array.from(workspace.querySelectorAll(".dev-layer"))
+        .map((el) => Number(el.style.zIndex || 10));
+    }
+
+    function constrain(parent, left, top, width, height) {
+      const minWidth = 8;
+      const minHeight = 8;
+      const nextWidth = Math.max(minWidth, width);
+      const nextHeight = Math.max(minHeight, height);
+      const nextLeft = Math.min(Math.max(-nextWidth + minWidth, left), parent.clientWidth - minWidth);
+      const nextTop = Math.min(Math.max(-nextHeight + minHeight, top), parent.clientHeight - minHeight);
+      return {
+        left: round(nextLeft),
+        top: round(nextTop),
+        width: round(nextWidth),
+        height: round(nextHeight)
+      };
+    }
+
+    function setBox(el, box) {
+      el.style.left = `${box.left}px`;
+      el.style.top = `${box.top}px`;
+      el.style.width = `${box.width}px`;
+      el.style.height = `${box.height}px`;
+      updateOutput();
+    }
+
+    function startPointer(event) {
+      const target = event.target.closest(".dev-layer");
+      if (!target) return;
+      event.preventDefault();
+      selectElement(target);
+      dragState = {
+        el: target,
+        parent: target.parentElement,
+        isResize: event.target.dataset.handle === "resize",
+        scale: getZoom(),
+        startX: event.clientX,
+        startY: event.clientY,
+        startLeft: numberFromPx(target.style.left),
+        startTop: numberFromPx(target.style.top),
+        startWidth: numberFromPx(target.style.width),
+        startHeight: numberFromPx(target.style.height),
+        group: moveGroup.checked && target.dataset.player && target.dataset.ungrouped !== "true" && event.target.dataset.handle !== "resize"
+          ? getPlayerGroupSnapshot(Number(target.dataset.player))
+          : null,
+        groupResize: resizeGroup.checked && target.dataset.player && target.dataset.ungrouped !== "true" && event.target.dataset.handle === "resize"
+          ? getPlayerGroupResizeSnapshot(Number(target.dataset.player))
+          : null
+      };
+      target.setPointerCapture(event.pointerId);
+    }
+
+    function movePointer(event) {
+      if (!dragState) return;
+      event.preventDefault();
+      const dx = (event.clientX - dragState.startX) / dragState.scale;
+      const dy = (event.clientY - dragState.startY) / dragState.scale;
+      const box = dragState.isResize
+        ? constrain(
+          dragState.parent,
+          dragState.startLeft,
+          dragState.startTop,
+          dragState.startWidth + dx,
+          dragState.startHeight + dy
+        )
+        : constrain(
+          dragState.parent,
+          dragState.startLeft + dx,
+          dragState.startTop + dy,
+          dragState.startWidth,
+          dragState.startHeight
+        );
+      if (dragState.groupResize) {
+        resizePlayerGroup(dragState.groupResize, dx, dy);
+      } else if (dragState.group) {
+        movePlayerGroup(dragState.group, dx, dy);
+      } else {
+        setBox(dragState.el, box);
+      }
+    }
+
+    function endPointer() {
+      dragState = null;
+    }
+
+    function getPlayerGroupSnapshot(player) {
+      return Array.from(workspace.querySelectorAll(`.dev-layer[data-player="${player}"]`))
+        .filter((el) => el.dataset.ungrouped !== "true")
+        .map((el) => ({
+          el,
+          left: numberFromPx(el.style.left),
+          top: numberFromPx(el.style.top),
+          width: numberFromPx(el.style.width),
+          height: numberFromPx(el.style.height)
+        }));
+    }
+
+    function getPlayerGroupResizeSnapshot(player) {
+      const items = getPlayerGroupSnapshot(player);
+      const bounds = getGroupBounds(items);
+      return { items, bounds };
+    }
+
+    function getGroupBounds(items) {
+      const left = Math.min(...items.map((item) => item.left));
+      const top = Math.min(...items.map((item) => item.top));
+      const right = Math.max(...items.map((item) => item.left + item.width));
+      const bottom = Math.max(...items.map((item) => item.top + item.height));
+      return {
+        left,
+        top,
+        width: right - left,
+        height: bottom - top
+      };
+    }
+
+    function movePlayerGroup(group, dx, dy) {
+      group.forEach((item) => {
+        const box = constrain(
+          item.el.parentElement,
+          item.left + dx,
+          item.top + dy,
+          item.width,
+          item.height
+        );
+        item.el.style.left = `${box.left}px`;
+        item.el.style.top = `${box.top}px`;
+      });
+      updateOutput();
+    }
+
+    function resizePlayerGroup(snapshot, dx, dy) {
+      const { bounds, items } = snapshot;
+      const scaleX = bounds.width ? (bounds.width + dx) / bounds.width : 1;
+      const scaleY = bounds.height ? (bounds.height + dy) / bounds.height : 1;
+      const scale = Math.max(0.1, Math.max(scaleX, scaleY));
+      items.forEach((item) => {
+        const box = constrain(
+          item.el.parentElement,
+          bounds.left + (item.left - bounds.left) * scale,
+          bounds.top + (item.top - bounds.top) * scale,
+          item.width * scale,
+          item.height * scale
+        );
+        item.el.style.left = `${box.left}px`;
+        item.el.style.top = `${box.top}px`;
+        item.el.style.width = `${box.width}px`;
+        item.el.style.height = `${box.height}px`;
+      });
+      updateOutput();
+    }
+
+    function nudgeSelected(event) {
+      if (!selected) return;
+      const arrows = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1]
+      };
+      if (!arrows[event.key]) return;
+      event.preventDefault();
+      const amount = event.shiftKey ? 10 : 1;
+      const [dx, dy] = arrows[event.key];
+      if (moveGroup.checked && selected.dataset.player && selected.dataset.ungrouped !== "true") {
+        movePlayerGroup(getPlayerGroupSnapshot(Number(selected.dataset.player)), dx * amount, dy * amount);
+        return;
+      }
+      setBox(selected, constrain(
+        selected.parentElement,
+        numberFromPx(selected.style.left) + dx * amount,
+        numberFromPx(selected.style.top) + dy * amount,
+        numberFromPx(selected.style.width),
+        numberFromPx(selected.style.height)
+      ));
+    }
+
+    zoomRange.addEventListener("input", () => {
+      const zoom = getZoom();
+      zoomShell.style.transform = `scale(${zoom})`;
+      zoomShell.style.marginRight = `${800 * (zoom - 1)}px`;
+      zoomShell.style.marginBottom = `${600 * (zoom - 1)}px`;
+      zoomValue.textContent = `${zoomRange.value}%`;
+    });
+
+    showGuides.addEventListener("change", () => {
+      document.querySelectorAll(".dev-layer").forEach((el) => {
+        el.style.borderColor = showGuides.checked ? "" : "transparent";
+        el.querySelectorAll(".layer-label, .handle").forEach((child) => {
+          child.style.display = showGuides.checked ? "" : "none";
+        });
+      });
+    });
+
+    showGrid.addEventListener("change", () => {
+      gridOverlay.style.display = showGrid.checked ? "" : "none";
+      centerOverlay.style.display = showGrid.checked ? "" : "none";
+    });
+
+    gridSize.addEventListener("input", () => {
+      workspace.style.setProperty("--grid-size", `${gridSize.value}px`);
+      gridSizeValue.textContent = `${gridSize.value}px`;
+    });
+
+    showSlotGuides.addEventListener("change", () => {
+      slotGuides.style.display = showSlotGuides.checked ? "" : "none";
+    });
+
+    renderSlotGuides();
+    gridSize.dispatchEvent(new Event("input"));
+
+    showRoomBg.addEventListener("change", () => {
+      workspace.querySelector(".room-bg").style.display = showRoomBg.checked ? "" : "none";
+    });
+
+    layerSelect.addEventListener("change", () => {
+      selectElement(workspace.querySelector(`[data-layer-id="${CSS.escape(layerSelect.value)}"]`));
+    });
+
+    sendBackward.addEventListener("click", () => {
+      setSelectedZ(selectedZ() - 1);
+    });
+
+    bringForward.addEventListener("click", () => {
+      setSelectedZ(selectedZ() + 1);
+    });
+
+    sendToBack.addEventListener("click", () => {
+      const minZ = Math.min(...layerZIndexes());
+      setSelectedZ(minZ - 1);
+    });
+
+    bringToFront.addEventListener("click", () => {
+      const maxZ = Math.max(...layerZIndexes());
+      setSelectedZ(maxZ + 1);
+    });
+
+    cloneEight.addEventListener("click", cloneTemplateToEightPlayers);
+
+    loadJson.addEventListener("click", () => {
+      try {
+        const parsed = JSON.parse(outputMatrix.value);
+        const loadedLayers = Array.isArray(parsed.layers) ? parsed.layers : [];
+        const keepIds = new Set([
+          "cardBase1107",
+          "playerSprite",
+          "readyStamp",
+          "readyButtonArea",
+          "exitButtonArea",
+          "weapon",
+          "levelText",
+          "rankIcon",
+          "teamColor",
+          "rankEmoji",
+          "rankText",
+          "infoButtonBg",
+          "infoButtonIcon",
+          "nameBarVector",
+          "characterBounds1104"
+        ]);
+        const normalized = loadedLayers
+          .filter((layer) => keepIds.has(layer.baseId || String(layer.id || "").replace(/^p\d+_/, "")))
+          .map(normalizeLoadedLayer);
+        if (!normalized.length) throw new Error("No supported layers found.");
+        setLayers(normalized);
+      } catch (error) {
+        selectedOutput.value = `Could not load JSON:\n${error.message}`;
+      }
+    });
+
+    copyJson.addEventListener("click", async () => {
+      outputMatrix.select();
+      try {
+        await navigator.clipboard.writeText(outputMatrix.value);
+        copyJson.textContent = "Copied";
+        setTimeout(() => {
+          copyJson.textContent = "Copy JSON";
+        }, 900);
+      } catch {
+        document.execCommand("copy");
+      }
+    });
+
+    resetLayout.addEventListener("click", reset);
+    document.addEventListener("pointerdown", startPointer);
+    document.addEventListener("pointermove", movePointer);
+    document.addEventListener("pointerup", endPointer);
+    document.addEventListener("keydown", nudgeSelected);
+
+    reset();
+    zoomRange.dispatchEvent(new Event("input"));
+  </script>
+</body>
+</html>
